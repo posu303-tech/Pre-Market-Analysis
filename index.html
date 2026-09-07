@@ -147,6 +147,29 @@
   .card-actions{display:flex;gap:8px;margin-top:14px;}
 
   .swatch{display:inline-block;width:9px;height:9px;border-radius:2px;margin-right:6px;vertical-align:middle;}
+
+  /* ---- live chart ---- */
+  .chart-toolbar{display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between;margin-bottom:10px;}
+  .tick-status{font-family:var(--mono);font-size:12px;color:var(--muted);display:flex;align-items:center;gap:6px;}
+  .tick-status .dot{width:7px;height:7px;border-radius:50%;background:var(--muted-2);display:inline-block;}
+  .tick-status.live .dot{background:var(--buy);box-shadow:0 0 0 3px rgba(55,184,137,.15);}
+  .tick-status.error .dot{background:var(--sell);}
+  .live-price{font-family:var(--mono);font-size:20px;font-weight:600;transition:color .15s;}
+  .chart-legend{display:flex;flex-wrap:wrap;gap:14px;font-family:var(--mono);font-size:11.5px;color:var(--muted);}
+  .chart-legend span{display:flex;align-items:center;gap:5px;}
+  .chart-btns{display:flex;gap:6px;}
+  #chartWrap{
+    position:relative;background:var(--panel);border:1px solid var(--border);border-radius:8px;
+    overflow:hidden;touch-action:none;
+  }
+  #priceChart{display:block;width:100%;height:380px;cursor:grab;}
+  #priceChart.dragging{cursor:grabbing;}
+  .chart-hint{font-family:var(--mono);font-size:11px;color:var(--muted-2);margin-top:8px;}
+  .jump-live{
+    position:absolute;top:12px;right:12px;font-family:var(--mono);font-size:11.5px;
+    background:var(--info);color:#0C1013;border:none;border-radius:5px;padding:6px 10px;
+    cursor:pointer;font-weight:600;display:none;
+  }
 </style>
 </head>
 <body>
@@ -171,7 +194,7 @@
       </div>
       <button id="refreshBtn" class="primary">Refresh</button>
       <label class="small muted" style="display:flex;align-items:center;gap:5px;font-family:var(--mono);">
-        <input type="checkbox" id="autoRefresh"> auto 60s
+        <input type="checkbox" id="autoRefresh" checked> analysis every 1m
       </label>
     </div>
   </div>
@@ -186,13 +209,36 @@
     <div id="lede" class="lede">Fetching live data…</div>
   </section>
 
+  <section id="secChart">
+    <h2><span class="n">02</span>&nbsp; Live chart — tick-by-tick, session value area</h2>
+    <div class="chart-toolbar">
+      <div class="tick-status" id="tickStatus"><span class="dot"></span><span id="tickStatusText">Connecting to tick stream…</span></div>
+      <div class="live-price" id="livePriceTag">—</div>
+      <div class="chart-btns">
+        <button id="zoomOutBtn" title="Zoom out">−</button>
+        <button id="zoomInBtn" title="Zoom in">+</button>
+        <button id="resetZoomBtn">Reset view</button>
+      </div>
+    </div>
+    <div id="chartWrap">
+      <canvas id="priceChart"></canvas>
+      <button class="jump-live" id="jumpLiveBtn">Jump to live ›</button>
+    </div>
+    <div class="chart-legend" style="margin-top:10px;">
+      <span><span class="swatch" style="background:var(--buy);"></span>VAH — session value area high</span>
+      <span><span class="swatch" style="background:var(--info);"></span>POC — session point of control</span>
+      <span><span class="swatch" style="background:var(--sell);"></span>VAL — session value area low</span>
+    </div>
+    <div class="chart-hint">Scroll / pinch to zoom, drag to pan. Candles are the selected execution timeframe; the right-most candle updates live from Binance's trade stream. Analysis panels below refresh on a fixed 1-minute cycle.</div>
+  </section>
+
   <section id="secData">
-    <h2><span class="n">02</span>&nbsp; Data requirements — confirmation checklist</h2>
+    <h2><span class="n">03</span>&nbsp; Data requirements — confirmation checklist</h2>
     <ul class="checklist" id="checklist"></ul>
   </section>
 
   <section id="secLevels">
-    <h2><span class="n">03</span>&nbsp; Key levels</h2>
+    <h2><span class="n">04</span>&nbsp; Key levels</h2>
     <table id="levelsTable">
       <thead><tr><th>Level</th><th>Price</th><th>Method / inputs</th></tr></thead>
       <tbody></tbody>
@@ -200,7 +246,7 @@
   </section>
 
   <section id="secStructure">
-    <h2><span class="n">04</span>&nbsp; Market structure &amp; bias</h2>
+    <h2><span class="n">05</span>&nbsp; Market structure &amp; bias</h2>
     <div class="grid2">
       <div>
         <p id="structureText"></p>
@@ -216,7 +262,7 @@
   </section>
 
   <section id="secSetups">
-    <h2><span class="n">05</span>&nbsp; Trade setups</h2>
+    <h2><span class="n">06</span>&nbsp; Trade setups</h2>
     <table id="setupsTable">
       <thead><tr><th>Setup</th><th>Trigger / entry</th><th>Invalidation (stop)</th><th>Target 1</th><th>Target 2</th><th>R:R</th><th>Confirmation needed</th></tr></thead>
       <tbody></tbody>
@@ -224,7 +270,7 @@
   </section>
 
   <section id="secRisk">
-    <h2><span class="n">06</span>&nbsp; Risk notes</h2>
+    <h2><span class="n">07</span>&nbsp; Risk notes</h2>
     <div class="riskbox"><ul id="riskList"></ul></div>
     <div style="margin-top:14px;">
       <label class="small muted" for="catalystNotes" style="display:block;margin-bottom:6px;font-family:var(--mono);">Manual catalyst log (not fetched automatically — enter today's known events, stored in this browser only)</label>
@@ -233,7 +279,7 @@
   </section>
 
   <section id="secAppendix">
-    <h2><span class="n">07</span>&nbsp; Appendix — last 10 daily candles</h2>
+    <h2><span class="n">08</span>&nbsp; Appendix — last 10 daily candles</h2>
     <table id="candlesTable">
       <thead><tr><th>Date (UTC)</th><th>Open</th><th>High</th><th>Low</th><th>Close</th><th>Volume</th></tr></thead>
       <tbody></tbody>
@@ -260,6 +306,9 @@
 const SYMBOL_MAP = { BTC:'BTCUSDT', ETH:'ETHUSDT', SOL:'SOLUSDT', XAUT:'XAUTUSDT' };
 const DISPLAY_NAME = { BTC:'BTC-USD', ETH:'ETH-USD', SOL:'SOL-USD', XAUT:'XAUT-USD' };
 const API = 'https://api.binance.com/api/v3';
+const WS_BASE = 'wss://stream.binance.com:9443/ws';
+const TF_MS = { '15m': 15*60*1000, '1h': 60*60*1000, '4h': 4*60*60*1000 };
+const ANALYSIS_INTERVAL_MS = 60*1000; // full analysis re-run cadence, per desk requirement
 
 const STATE = {
   symbol: 'BTC',
@@ -269,6 +318,25 @@ const STATE = {
   data: null,     // computed bundle for current symbol
   peers: null,    // 24h ticker stats for all 4 symbols
   errors: []      // list of {section, message}
+};
+
+// Live tick / chart state — separate from STATE so websocket ticks never block
+// or wait on the once-a-minute full analysis fetch.
+const LIVE = {
+  ws: null,
+  reconnectTimer: null,
+  lastTradePrice: null,
+  prevTradePrice: null,
+  candles: [],        // working candle array for the chart (cloned from exec candles, then live-updated)
+  view: { start: 0, count: 120, following: true },
+  dragging: false,
+  dragStartX: 0,
+  dragStartView: 0,
+  pinchStartDist: null,
+  pinchStartCount: null,
+  canvas: null, ctx: null, dpr: 1,
+  redrawScheduled: false,
+  sessionVP: null      // today's session POC/VAH/VAL, recomputed once per analysis cycle
 };
 
 /* =========================================================================
@@ -336,6 +404,28 @@ async function fetchKlines(pair, interval, limit){
 
 async function fetchTicker24hr(pair){
   return fetchJSON(`${API}/ticker/24hr?symbol=${pair}`);
+}
+
+// Fetch 1-minute candles covering today (UTC) for the session volume profile.
+// Binance caps a single request at 1000 candles (~16.6h), so we paginate
+// forward with startTime until we reach "now".
+async function fetchTodayMinuteKlines(pair, todayStartMs){
+  let out = [];
+  let cursor = todayStartMs;
+  const now = Date.now();
+  let guard = 0;
+  while(cursor < now && guard < 3){
+    const url = `${API}/klines?symbol=${pair}&interval=1m&startTime=${cursor}&limit=1000`;
+    const raw = await fetchJSON(url);
+    if(!raw.length) break;
+    const batch = raw.map(toCandle);
+    out = out.concat(batch);
+    const lastClose = batch[batch.length-1].closeTime;
+    if(lastClose <= cursor) break;
+    cursor = lastClose + 1;
+    guard++;
+  }
+  return out;
 }
 
 /* =========================================================================
@@ -493,7 +583,7 @@ async function loadAll(){
   const execInterval = STATE.execTf;
   const execLimit = execInterval === '15m' ? 1000 : 500;
 
-  let daily=null, hourly=null, exec=null, ticker=null, peerTickers=null;
+  let daily=null, hourly=null, exec=null, ticker=null, peerTickers=null, todayMinutes=null;
 
   try{
     [daily, hourly, exec, ticker] = await Promise.all([
@@ -504,6 +594,15 @@ async function loadAll(){
     ]);
   } catch(e){
     STATE.errors.push({section:'core', message: e.message});
+  }
+
+  if(daily && daily.length){
+    try{
+      const todayStart = daily[daily.length-1].openTime;
+      todayMinutes = await fetchTodayMinuteKlines(pair, todayStart);
+    } catch(e){
+      STATE.errors.push({section:'session-volume-profile', message: e.message});
+    }
   }
 
   try{
@@ -528,12 +627,14 @@ async function loadAll(){
   }
 
   STATE.peers = peerTickers;
-  STATE.data = computeBundle({symbol, pair, daily, hourly, exec, ticker, execInterval});
+  STATE.data = computeBundle({symbol, pair, daily, hourly, exec, ticker, execInterval, todayMinutes});
+  LIVE.sessionVP = STATE.data.sessionVP;
   setStatus('live', `Live — Binance spot, fetched ${fmtTime(STATE.lastFetch)}`);
   render();
+  resetChartCandles(exec);
 }
 
-function computeBundle({symbol, pair, daily, hourly, exec, ticker, execInterval}){
+function computeBundle({symbol, pair, daily, hourly, exec, ticker, execInterval, todayMinutes}){
   const last = daily[daily.length-1];
   const prev = daily[daily.length-2];
   const prevPrev = daily[daily.length-3];
@@ -590,6 +691,13 @@ function computeBundle({symbol, pair, daily, hourly, exec, ticker, execInterval}
   const vp10 = volumeProfileForDays(closedDaily, hourly, 10);
   const vp20 = volumeProfileForDays(closedDaily, hourly, 20);
 
+  // Current session's own volume profile (today, UTC 00:00 -> now), from 1m candles
+  let sessionVP = null;
+  if(todayMinutes && todayMinutes.length){
+    const vp = volumeProfile(todayMinutes, 24);
+    if(vp) sessionVP = {...vp, minutePoints: todayMinutes.length};
+  }
+
   // Fibonacci from most recent significant swing (60-day lookback on daily candles)
   const swing = findSwing(closedDaily, 60);
   const fib = fibLevels(swing);
@@ -610,7 +718,7 @@ function computeBundle({symbol, pair, daily, hourly, exec, ticker, execInterval}
     avgVol20, currentVolume24h,
     sessionsToday, overnightRange,
     pivots, emaVals, atrDailyVal, atrDailyAvg20, atrExecVal, atrExecAvg20,
-    vp5, vp10, vp20,
+    vp5, vp10, vp20, sessionVP,
     swing, fib, gaps,
     htfTrend, intradayTrend, regime,
     fetchedAt: Date.now()
@@ -813,7 +921,7 @@ function render(){
   renderRisk(d);
   renderCandles(d);
   document.getElementById('sourceNote').textContent =
-    `Source: Binance public spot REST API (api.binance.com), symbol ${d.pair}. Data pulled ${new Date(d.fetchedAt).toISOString()}. All levels below are computed client-side in this page from that data — nothing is server-cached or pre-generated.`;
+    `Source: Binance public spot REST API (api.binance.com) for candles/levels, symbol ${d.pair}, and Binance's public trade WebSocket stream for the live tick price/chart. Analysis pulled ${new Date(d.fetchedAt).toISOString()}, re-run automatically every 60s while "analysis every 1m" is checked. All levels below are computed client-side in this page — nothing is server-cached or pre-generated.`;
 }
 
 function renderLede(d){
@@ -840,7 +948,8 @@ function renderChecklist(d){
   const items = [
     {ok:true, label:'Last 10 daily candles (OHLCV)', detail:`Loaded from Binance 1d klines, ${d.last10Daily.length} candles.`},
     {ok:true, label:"Prior day OHLC + prior day VWAP", detail:`PDH ${fmtPrice(d.prevDay.high)} / PDL ${fmtPrice(d.prevDay.low)} / PDC ${fmtPrice(d.prevDay.close)}; VWAP ${d.prevDayVWAP!==null?fmtPrice(d.prevDayVWAP):'insufficient 1h coverage — flagged'}.`},
-    {ok:true, label:'Current price + volume vs 20-day average volume', detail:`Last ${fmtPrice(d.lastPrice)}; 24h volume ${fmtVol(d.currentVolume24h)} vs 20-day avg ${d.avgVol20?fmtVol(d.avgVol20):'—'}.`},
+    {ok:true, label:'Current price + volume vs 20-day average volume', detail:`Last ${fmtPrice(d.lastPrice)}; 24h volume ${fmtVol(d.currentVolume24h)} vs 20-day avg ${d.avgVol20?fmtVol(d.avgVol20):'—'}. Live price also streams tick-by-tick via Binance WebSocket in the chart above.`},
+    {ok:!!d.sessionVP, label:"Current session volume profile (POC / VAH / VAL)", detail: d.sessionVP ? `Computed from ${d.sessionVP.minutePoints} 1-minute candles since today 00:00 UTC; plotted as lines on the live chart.` : "Today's 1m candle fetch failed this cycle."},
     {ok:!!d.overnightRange, label:'Overnight / after-hours range proxy', detail: d.overnightRange ? `Prior US close → today's Asian session range: H ${fmtPrice(d.overnightRange.high)} / L ${fmtPrice(d.overnightRange.low)}. Crypto trades 24/7 — this is a session-window proxy, not a true closed-market gap.` : 'Insufficient hourly coverage for this window.'},
     {ok:false, label:'Scheduled catalysts (earnings / CPI / FOMC / NFP / sector news)', detail:'Not fetched automatically — no news/economic-calendar feed is wired into this build. Use the manual catalyst log in Section 06.'},
     {ok:false, label:'Options data (put/call skew, gamma exposure, max pain)', detail:'Not integrated in this build. Note: this brief is built from Binance SPOT data, not futures/options — flagging per the zero-fabrication standard rather than guessing.'}
@@ -860,6 +969,13 @@ function renderLevels(d){
   rows.push(['Prior day close', fmtPrice(d.prevDay.close), 'PDC — close of the most recently closed daily candle']);
   rows.push(['Prior day VWAP', d.prevDayVWAP!==null?fmtPrice(d.prevDayVWAP):'—', 'Σ(typical price × vol) / Σ(vol) over 1h candles inside the prior UTC day']);
   rows.push(['Session VWAP (today)', d.sessionVWAP!==null?fmtPrice(d.sessionVWAP):'—', 'Anchored from today 00:00 UTC (session open), 1h candles']);
+  if(d.sessionVP){
+    rows.push(['Session POC (today)', fmtPrice(d.sessionVP.poc), `Volume histogram (24 bins) over today's 1m candles (${d.sessionVP.minutePoints} points) — also plotted on the live chart`]);
+    rows.push(['Session VAH (today)', fmtPrice(d.sessionVP.vah), 'Upper edge of the 70% value area around today\'s POC']);
+    rows.push(['Session VAL (today)', fmtPrice(d.sessionVP.val), 'Lower edge of the 70% value area around today\'s POC']);
+  } else {
+    rows.push(['Session POC / VAH / VAL (today)', 'unavailable', "Today's 1m candle fetch failed or returned no data this cycle"]);
+  }
   rows.push(['Pivot (P)', fmtPrice(d.pivots.P), '(PDH + PDL + PDC) / 3']);
   rows.push(['R1 / S1', `${fmtPrice(d.pivots.R1)} / ${fmtPrice(d.pivots.S1)}`, 'R1 = 2P−PDL · S1 = 2P−PDH']);
   rows.push(['R2 / S2', `${fmtPrice(d.pivots.R2)} / ${fmtPrice(d.pivots.S2)}`, 'R2 = P+(PDH−PDL) · S2 = P−(PDH−PDL)']);
@@ -996,10 +1112,351 @@ function buildPlainText(){
 }
 
 /* =========================================================================
+   LIVE TICK STREAM (WebSocket) + LIVE CANDLE AGGREGATION
+   ========================================================================= */
+function connectTickStream(){
+  closeTickStream();
+  const pair = SYMBOL_MAP[STATE.symbol];
+  setTickStatus('connecting', 'Connecting to tick stream…');
+  try{
+    const ws = new WebSocket(`${WS_BASE}/${pair.toLowerCase()}@trade`);
+    LIVE.ws = ws;
+    ws.onopen = () => setTickStatus('live', `Live ticks — ${DISPLAY_NAME[STATE.symbol]} @ Binance`);
+    ws.onmessage = (ev) => {
+      let msg;
+      try{ msg = JSON.parse(ev.data); } catch(e){ return; }
+      if(msg.e !== 'trade') return;
+      handleTrade(parseFloat(msg.p), parseFloat(msg.q), msg.T);
+    };
+    ws.onerror = () => setTickStatus('error', 'Tick stream error — retrying…');
+    ws.onclose = () => {
+      setTickStatus('error', 'Tick stream disconnected — reconnecting…');
+      LIVE.reconnectTimer = setTimeout(connectTickStream, 4000);
+    };
+  } catch(e){
+    setTickStatus('error', 'Could not open tick stream (WebSocket blocked?)');
+  }
+}
+function closeTickStream(){
+  if(LIVE.reconnectTimer){ clearTimeout(LIVE.reconnectTimer); LIVE.reconnectTimer = null; }
+  if(LIVE.ws){
+    LIVE.ws.onclose = null; LIVE.ws.onerror = null;
+    try{ LIVE.ws.close(); }catch(e){}
+    LIVE.ws = null;
+  }
+}
+function setTickStatus(kind, text){
+  const el = document.getElementById('tickStatus');
+  if(!el) return;
+  el.className = 'tick-status ' + (kind==='live' ? 'live' : (kind==='error' ? 'error' : ''));
+  document.getElementById('tickStatusText').textContent = text;
+}
+
+function handleTrade(price, qty, tradeTime){
+  LIVE.prevTradePrice = LIVE.lastTradePrice;
+  LIVE.lastTradePrice = price;
+  updateLivePriceTag(price);
+  updateLiveCandle(price, qty, tradeTime);
+  scheduleChartRedraw();
+}
+
+function updateLivePriceTag(price){
+  const tag = document.getElementById('livePriceTag');
+  if(!tag) return;
+  tag.textContent = fmtPrice(price);
+  tag.classList.remove('up','down');
+  if(LIVE.prevTradePrice !== null){
+    tag.classList.add(price >= LIVE.prevTradePrice ? 'up' : 'down');
+  }
+}
+
+function resetChartCandles(execCandles){
+  LIVE.candles = execCandles.map(c => ({...c}));
+  LIVE.view.count = Math.min(120, LIVE.candles.length);
+  LIVE.view.start = Math.max(0, LIVE.candles.length - LIVE.view.count);
+  LIVE.view.following = true;
+  document.getElementById('jumpLiveBtn').style.display = 'none';
+  scheduleChartRedraw();
+}
+
+function updateLiveCandle(price, qty, tradeTime){
+  const tfMs = TF_MS[STATE.execTf] || TF_MS['1h'];
+  const bucketStart = Math.floor(tradeTime / tfMs) * tfMs;
+  const candles = LIVE.candles;
+  const last = candles[candles.length-1];
+  if(last && last.openTime === bucketStart){
+    last.high = Math.max(last.high, price);
+    last.low = Math.min(last.low, price);
+    last.close = price;
+    last.volume += qty;
+  } else if(last && bucketStart > last.openTime){
+    candles.push({openTime:bucketStart, closeTime:bucketStart+tfMs-1, open:price, high:price, low:price, close:price, volume:qty});
+    if(LIVE.view.following){
+      LIVE.view.start = Math.max(0, candles.length - LIVE.view.count);
+    }
+  }
+  // keep the working array bounded so it doesn't grow unbounded across a long session
+  if(candles.length > 2000) candles.splice(0, candles.length-2000);
+}
+
+function scheduleChartRedraw(){
+  if(LIVE.redrawScheduled) return;
+  LIVE.redrawScheduled = true;
+  requestAnimationFrame(() => { LIVE.redrawScheduled = false; drawChart(); });
+}
+
+/* =========================================================================
+   CANVAS CHART — candlesticks + session VAL/POC/VAH, with pan + zoom
+   ========================================================================= */
+function initChart(){
+  const canvas = document.getElementById('priceChart');
+  LIVE.canvas = canvas;
+  LIVE.ctx = canvas.getContext('2d');
+
+  const resize = () => {
+    const rect = canvas.parentElement.getBoundingClientRect();
+    LIVE.dpr = window.devicePixelRatio || 1;
+    canvas.width = Math.max(1, Math.floor(rect.width * LIVE.dpr));
+    canvas.height = Math.max(1, Math.floor(380 * LIVE.dpr));
+    canvas.style.width = rect.width + 'px';
+    canvas.style.height = '380px';
+    drawChart();
+  };
+  window.addEventListener('resize', resize);
+  resize();
+
+  canvas.addEventListener('wheel', (e) => {
+    e.preventDefault();
+    zoomChart(e.deltaY < 0 ? 0.85 : 1.18, e.offsetX);
+  }, {passive:false});
+
+  canvas.addEventListener('mousedown', (e) => {
+    LIVE.dragging = true;
+    LIVE.dragStartX = e.clientX;
+    LIVE.dragStartView = LIVE.view.start;
+    canvas.classList.add('dragging');
+  });
+  window.addEventListener('mousemove', (e) => {
+    if(!LIVE.dragging) return;
+    panChartByPixels(e.clientX - LIVE.dragStartX);
+  });
+  window.addEventListener('mouseup', () => {
+    LIVE.dragging = false;
+    canvas.classList.remove('dragging');
+  });
+
+  canvas.addEventListener('touchstart', (e) => {
+    if(e.touches.length === 1){
+      LIVE.dragging = true;
+      LIVE.dragStartX = e.touches[0].clientX;
+      LIVE.dragStartView = LIVE.view.start;
+    } else if(e.touches.length === 2){
+      LIVE.dragging = false;
+      LIVE.pinchStartDist = touchDist(e.touches);
+      LIVE.pinchStartCount = LIVE.view.count;
+    }
+  }, {passive:true});
+  canvas.addEventListener('touchmove', (e) => {
+    if(e.touches.length === 1 && LIVE.dragging){
+      panChartByPixels(e.touches[0].clientX - LIVE.dragStartX);
+    } else if(e.touches.length === 2 && LIVE.pinchStartDist){
+      const dist = touchDist(e.touches);
+      const ratio = LIVE.pinchStartDist / dist;
+      LIVE.view.count = clampViewCount(Math.round(LIVE.pinchStartCount * ratio));
+      clampViewStart();
+      drawChart();
+    }
+  }, {passive:true});
+  canvas.addEventListener('touchend', () => {
+    LIVE.dragging = false;
+    LIVE.pinchStartDist = null;
+  });
+
+  document.getElementById('zoomInBtn').addEventListener('click', () => zoomChart(0.8, LIVE.canvas.clientWidth/2));
+  document.getElementById('zoomOutBtn').addEventListener('click', () => zoomChart(1.25, LIVE.canvas.clientWidth/2));
+  document.getElementById('resetZoomBtn').addEventListener('click', () => {
+    LIVE.view.count = Math.min(120, LIVE.candles.length);
+    LIVE.view.start = Math.max(0, LIVE.candles.length - LIVE.view.count);
+    LIVE.view.following = true;
+    document.getElementById('jumpLiveBtn').style.display = 'none';
+    drawChart();
+  });
+  document.getElementById('jumpLiveBtn').addEventListener('click', () => {
+    LIVE.view.count = Math.min(LIVE.view.count, LIVE.candles.length);
+    LIVE.view.start = Math.max(0, LIVE.candles.length - LIVE.view.count);
+    LIVE.view.following = true;
+    document.getElementById('jumpLiveBtn').style.display = 'none';
+    drawChart();
+  });
+}
+
+function touchDist(touches){
+  const dx = touches[0].clientX - touches[1].clientX;
+  const dy = touches[0].clientY - touches[1].clientY;
+  return Math.sqrt(dx*dx + dy*dy);
+}
+function clampViewCount(n){
+  return Math.max(15, Math.min(LIVE.candles.length || 15, n));
+}
+function clampViewStart(){
+  const maxStart = Math.max(0, LIVE.candles.length - LIVE.view.count);
+  LIVE.view.start = Math.max(0, Math.min(maxStart, LIVE.view.start));
+}
+function zoomChart(factor, anchorPx){
+  if(!LIVE.candles.length) return;
+  const rect = LIVE.canvas.getBoundingClientRect();
+  const anchorFrac = Math.max(0, Math.min(1, anchorPx / rect.width));
+  const anchorIdx = LIVE.view.start + anchorFrac * LIVE.view.count;
+  const newCount = clampViewCount(Math.round(LIVE.view.count * factor));
+  LIVE.view.start = Math.round(anchorIdx - anchorFrac * newCount);
+  LIVE.view.count = newCount;
+  clampViewStart();
+  checkFollowing();
+  drawChart();
+}
+function panChartByPixels(dxPixels){
+  if(!LIVE.candles.length) return;
+  const rect = LIVE.canvas.getBoundingClientRect();
+  const candleWidthPx = rect.width / LIVE.view.count;
+  const deltaCandles = Math.round(dxPixels / candleWidthPx);
+  LIVE.view.start = LIVE.dragStartView - deltaCandles;
+  clampViewStart();
+  checkFollowing();
+  drawChart();
+}
+function checkFollowing(){
+  const atEnd = LIVE.view.start + LIVE.view.count >= LIVE.candles.length - 1;
+  LIVE.view.following = atEnd;
+  document.getElementById('jumpLiveBtn').style.display = atEnd ? 'none' : 'block';
+}
+
+function drawChart(){
+  const ctx = LIVE.ctx;
+  if(!ctx || !LIVE.canvas) return;
+  const dpr = LIVE.dpr;
+  const W = LIVE.canvas.width, H = LIVE.canvas.height;
+  ctx.save();
+  ctx.scale(dpr, dpr);
+  const cw = W/dpr, ch = H/dpr;
+  ctx.clearRect(0,0,cw,ch);
+
+  const candles = LIVE.candles;
+  if(!candles.length){
+    ctx.fillStyle = '#576068';
+    ctx.font = '13px IBM Plex Mono, monospace';
+    ctx.fillText('Waiting for candle data…', 16, 24);
+    ctx.restore();
+    return;
+  }
+
+  clampViewStart();
+  const start = LIVE.view.start, count = LIVE.view.count;
+  const visible = candles.slice(start, start+count);
+  if(!visible.length){ ctx.restore(); return; }
+
+  const padL = 8, padR = 64, padT = 14, padB = 22;
+  const plotW = cw - padL - padR, plotH = ch - padT - padB;
+
+  let lo = Math.min(...visible.map(c=>c.low));
+  let hi = Math.max(...visible.map(c=>c.high));
+  const vp = LIVE.sessionVP;
+  if(vp){ lo = Math.min(lo, vp.val); hi = Math.max(hi, vp.vah); }
+  const range = (hi - lo) || (hi*0.01) || 1;
+  lo -= range*0.06; hi += range*0.06;
+
+  const yFor = (price) => padT + plotH * (1 - (price - lo)/(hi-lo));
+  const slot = plotW / count;
+  const xFor = (i) => padL + i*slot + slot/2;
+
+  // grid + price axis
+  ctx.strokeStyle = '#1B2229';
+  ctx.lineWidth = 1;
+  ctx.font = '11px IBM Plex Mono, monospace';
+  const gridLines = 5;
+  for(let g=0; g<=gridLines; g++){
+    const price = lo + (hi-lo)*g/gridLines;
+    const y = yFor(price);
+    ctx.beginPath(); ctx.moveTo(padL, y); ctx.lineTo(cw-padR, y); ctx.stroke();
+    ctx.fillStyle = '#7C8894';
+    ctx.fillText(fmtPrice(price), cw-padR+8, y+4);
+  }
+
+  // session value area shading
+  if(vp){
+    ctx.fillStyle = 'rgba(91,141,190,0.06)';
+    const yVAH = yFor(vp.vah), yVAL = yFor(vp.val);
+    ctx.fillRect(padL, yVAH, plotW, yVAL-yVAH);
+  }
+
+  // candles
+  const bodyW = Math.max(1, slot*0.62);
+  for(let i=0;i<visible.length;i++){
+    const c = visible[i];
+    const x = xFor(i);
+    const up = c.close >= c.open;
+    ctx.strokeStyle = ctx.fillStyle = up ? '#37B889' : '#E2584A';
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(x, yFor(c.high));
+    ctx.lineTo(x, yFor(c.low));
+    ctx.stroke();
+    const yO = yFor(c.open), yC = yFor(c.close);
+    const top = Math.min(yO,yC), h = Math.max(1, Math.abs(yC-yO));
+    ctx.fillRect(x-bodyW/2, top, bodyW, h);
+  }
+
+  // live marker on the last (forming) candle
+  const lastGlobalIdx = candles.length-1;
+  if(start+visible.length-1 === lastGlobalIdx){
+    const lastC = visible[visible.length-1];
+    const x = xFor(visible.length-1);
+    ctx.fillStyle = lastC.close >= lastC.open ? '#37B889' : '#E2584A';
+    ctx.beginPath(); ctx.arc(x, yFor(lastC.close), 3, 0, Math.PI*2); ctx.fill();
+  }
+
+  // VAL / POC / VAH lines
+  if(vp){
+    const lines = [
+      {price: vp.vah, color: '#37B889', label: 'VAH'},
+      {price: vp.poc, color: '#5B8DBE', label: 'POC'},
+      {price: vp.val, color: '#E2584A', label: 'VAL'}
+    ];
+    ctx.setLineDash([5,4]);
+    ctx.lineWidth = 1.3;
+    ctx.font = '10.5px IBM Plex Mono, monospace';
+    lines.forEach(l => {
+      const y = yFor(l.price);
+      if(y < padT-10 || y > ch-padB+10) return;
+      ctx.strokeStyle = l.color;
+      ctx.beginPath(); ctx.moveTo(padL, y); ctx.lineTo(cw-padR, y); ctx.stroke();
+      ctx.fillStyle = l.color;
+      ctx.fillText(l.label, padL+4, y-3);
+    });
+    ctx.setLineDash([]);
+  }
+
+  // time axis (first / middle / last visible)
+  ctx.fillStyle = '#576068';
+  ctx.font = '10.5px IBM Plex Mono, monospace';
+  const timeLabel = (c) => {
+    const t = new Date(c.openTime);
+    return t.toISOString().slice(5,16).replace('T',' ');
+  };
+  if(visible.length){
+    ctx.fillText(timeLabel(visible[0]), padL, ch-6);
+    ctx.fillText(timeLabel(visible[Math.floor(visible.length/2)]), padL+plotW/2-40, ch-6);
+    ctx.fillText(timeLabel(visible[visible.length-1]), cw-padR-90, ch-6);
+  }
+
+  ctx.restore();
+}
+
+/* =========================================================================
    WIRE UP UI
    ========================================================================= */
 document.getElementById('symbolSelect').addEventListener('change', (e)=>{
   STATE.symbol = e.target.value;
+  connectTickStream();
   loadAll();
 });
 document.querySelectorAll('.tf-group button').forEach(btn=>{
@@ -1024,16 +1481,19 @@ document.getElementById('copyBtn').addEventListener('click', async ()=>{
   }
 });
 let autoTimer = null;
+function setAutoRefresh(on){
+  if(autoTimer){ clearInterval(autoTimer); autoTimer = null; }
+  if(on){ autoTimer = setInterval(loadAll, ANALYSIS_INTERVAL_MS); }
+}
 document.getElementById('autoRefresh').addEventListener('change', (e)=>{
-  if(e.target.checked){
-    autoTimer = setInterval(loadAll, 60000);
-  } else if(autoTimer){
-    clearInterval(autoTimer);
-  }
+  setAutoRefresh(e.target.checked);
 });
 
 /* boot */
+initChart();
+connectTickStream();
 loadAll();
+setAutoRefresh(document.getElementById('autoRefresh').checked); // full analysis re-runs every 60s by default
 </script>
 </body>
 </html>
