@@ -1,0 +1,1039 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Pre-Market Desk Brief — BTC / ETH / SOL / XAUT</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#0C1013;
+    --panel:#12171C;
+    --panel-2:#161C22;
+    --border:#232A31;
+    --text:#DCE3E8;
+    --muted:#7C8894;
+    --muted-2:#576068;
+    --buy:#37B889;
+    --sell:#E2584A;
+    --warn:#D6A44A;
+    --info:#5B8DBE;
+    --mono:'IBM Plex Mono', ui-monospace, SFMono-Regular, monospace;
+    --sans:'IBM Plex Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:var(--bg);
+    color:var(--text);
+    font-family:var(--sans);
+    line-height:1.5;
+    -webkit-font-smoothing:antialiased;
+  }
+  ::selection{background:var(--info);color:#fff;}
+  a{color:var(--info);}
+  .wrap{max-width:1080px;margin:0 auto;padding:28px 20px 80px;}
+
+  /* ---- top bar ---- */
+  .topbar{
+    display:flex;flex-wrap:wrap;gap:14px;align-items:center;justify-content:space-between;
+    padding-bottom:18px;border-bottom:1px solid var(--border);margin-bottom:22px;
+  }
+  .brand{display:flex;flex-direction:column;gap:2px;}
+  .brand .kicker{font-family:var(--mono);font-size:12px;color:var(--muted);letter-spacing:.02em;}
+  .brand h1{font-size:19px;margin:0;font-weight:600;letter-spacing:-.01em;}
+  .controls{display:flex;gap:8px;align-items:center;flex-wrap:wrap;}
+  select, button{
+    font-family:var(--mono);font-size:13px;
+    background:var(--panel-2);color:var(--text);
+    border:1px solid var(--border);border-radius:6px;
+    padding:8px 10px;cursor:pointer;
+  }
+  select:focus, button:focus, input:focus{outline:2px solid var(--info);outline-offset:1px;}
+  button{transition:border-color .15s;}
+  button:hover{border-color:var(--muted);}
+  button.primary{background:var(--info);border-color:var(--info);color:#0C1013;font-weight:600;}
+  button.primary:hover{filter:brightness(1.08);}
+  .tf-group{display:flex;border:1px solid var(--border);border-radius:6px;overflow:hidden;}
+  .tf-group button{border:none;border-radius:0;background:var(--panel-2);}
+  .tf-group button.active{background:var(--info);color:#0C1013;font-weight:600;}
+  .tf-group button + button{border-left:1px solid var(--border);}
+
+  /* ---- status banner ---- */
+  .status{
+    font-family:var(--mono);font-size:12.5px;color:var(--muted);
+    display:flex;flex-wrap:wrap;gap:4px 16px;align-items:center;margin-bottom:22px;
+  }
+  .status .dot{width:7px;height:7px;border-radius:50%;background:var(--muted-2);display:inline-block;margin-right:6px;}
+  .status.live .dot{background:var(--buy);box-shadow:0 0 0 3px rgba(55,184,137,.15);}
+  .status.error .dot{background:var(--sell);}
+  .error-banner{
+    background:rgba(226,88,74,.08);border:1px solid rgba(226,88,74,.35);color:#F0A79C;
+    border-radius:8px;padding:12px 14px;font-family:var(--mono);font-size:12.5px;margin-bottom:22px;display:none;
+  }
+
+  section{margin-bottom:34px;}
+  h2{
+    font-size:13px;text-transform:none;letter-spacing:.01em;color:var(--muted);
+    font-weight:600;margin:0 0 12px;padding-bottom:8px;border-bottom:1px solid var(--border);
+  }
+  h2 .n{color:var(--muted-2);font-family:var(--mono);}
+  p{margin:0 0 10px;font-size:14.5px;}
+  .lede{
+    font-size:16px;line-height:1.65;padding:16px 18px;background:var(--panel);
+    border:1px solid var(--border);border-radius:8px;border-left:3px solid var(--info);
+  }
+  .lede.bias-bull{border-left-color:var(--buy);}
+  .lede.bias-bear{border-left-color:var(--sell);}
+  .lede.bias-neutral{border-left-color:var(--warn);}
+  .tag{
+    display:inline-block;font-family:var(--mono);font-size:11px;padding:2px 7px;border-radius:4px;
+    border:1px solid var(--border);color:var(--muted);margin-right:6px;vertical-align:middle;
+  }
+  .tag.bull{color:var(--buy);border-color:rgba(55,184,137,.4);}
+  .tag.bear{color:var(--sell);border-color:rgba(226,88,74,.4);}
+  .tag.warn{color:var(--warn);border-color:rgba(214,164,74,.4);}
+
+  table{width:100%;border-collapse:collapse;font-size:13.5px;}
+  th{
+    text-align:left;font-family:var(--mono);font-weight:500;font-size:11.5px;color:var(--muted);
+    padding:8px 10px;border-bottom:1px solid var(--border);white-space:nowrap;
+  }
+  td{padding:9px 10px;border-bottom:1px solid var(--border);vertical-align:top;}
+  tbody tr:last-child td{border-bottom:none;}
+  tbody tr:hover{background:rgba(255,255,255,.015);}
+  .num{font-family:var(--mono);font-variant-numeric:tabular-nums;white-space:nowrap;}
+  .muted{color:var(--muted);}
+  .small{font-size:12px;}
+  .method{color:var(--muted);font-size:12px;font-family:var(--mono);}
+  .up{color:var(--buy);}
+  .down{color:var(--sell);}
+  .flag{color:var(--warn);}
+
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:20px;}
+  @media (max-width:720px){.grid2{grid-template-columns:1fr;}}
+
+  .checklist{list-style:none;margin:0;padding:0;display:grid;gap:8px;}
+  .checklist li{
+    display:flex;gap:10px;align-items:flex-start;font-size:13px;padding:10px 12px;
+    background:var(--panel);border:1px solid var(--border);border-radius:6px;
+  }
+  .checklist .mark{font-family:var(--mono);font-size:13px;width:16px;flex:none;}
+  .checklist .mark.ok{color:var(--buy);}
+  .checklist .mark.no{color:var(--warn);}
+  .checklist .label{color:var(--text);font-weight:500;}
+  .checklist .detail{color:var(--muted);display:block;font-size:12px;margin-top:2px;}
+
+  .riskbox ul{margin:0;padding-left:0;list-style:none;display:grid;gap:10px;}
+  .riskbox li{
+    padding:10px 12px;background:var(--panel);border:1px solid var(--border);border-radius:6px;
+    font-size:13.5px;border-left:3px solid var(--warn);
+  }
+  .riskbox li.crit{border-left-color:var(--sell);}
+
+  .catalyst-input{
+    width:100%;min-height:56px;background:var(--panel-2);border:1px solid var(--border);
+    color:var(--text);font-family:var(--sans);font-size:13px;border-radius:6px;padding:10px;resize:vertical;
+  }
+  .foot{margin-top:8px;color:var(--muted-2);font-size:11.5px;font-family:var(--mono);}
+
+  footer{
+    border-top:1px solid var(--border);margin-top:44px;padding-top:16px;
+    font-size:12px;color:var(--muted-2);font-family:var(--mono);line-height:1.7;
+  }
+  .disclaimer{color:var(--warn);}
+  .card-actions{display:flex;gap:8px;margin-top:14px;}
+
+  .swatch{display:inline-block;width:9px;height:9px;border-radius:2px;margin-right:6px;vertical-align:middle;}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="topbar">
+    <div class="brand">
+      <span class="kicker">Pre-Market Technical Brief</span>
+      <h1 id="brandTitle">— loading —</h1>
+    </div>
+    <div class="controls">
+      <select id="symbolSelect" aria-label="Instrument">
+        <option value="BTC">BTC-USD</option>
+        <option value="ETH">ETH-USD</option>
+        <option value="SOL">SOL-USD</option>
+        <option value="XAUT">XAUT-USD</option>
+      </select>
+      <div class="tf-group" role="group" aria-label="Execution timeframe">
+        <button data-tf="15m">15m</button>
+        <button data-tf="1h" class="active">1h</button>
+        <button data-tf="4h">4h</button>
+      </div>
+      <button id="refreshBtn" class="primary">Refresh</button>
+      <label class="small muted" style="display:flex;align-items:center;gap:5px;font-family:var(--mono);">
+        <input type="checkbox" id="autoRefresh"> auto 60s
+      </label>
+    </div>
+  </div>
+
+  <div id="status" class="status">
+    <span class="dot"></span><span id="statusText">Initializing…</span>
+  </div>
+  <div id="errorBanner" class="error-banner"></div>
+
+  <section id="secSummary">
+    <h2><span class="n">01</span>&nbsp; Summary bias</h2>
+    <div id="lede" class="lede">Fetching live data…</div>
+  </section>
+
+  <section id="secData">
+    <h2><span class="n">02</span>&nbsp; Data requirements — confirmation checklist</h2>
+    <ul class="checklist" id="checklist"></ul>
+  </section>
+
+  <section id="secLevels">
+    <h2><span class="n">03</span>&nbsp; Key levels</h2>
+    <table id="levelsTable">
+      <thead><tr><th>Level</th><th>Price</th><th>Method / inputs</th></tr></thead>
+      <tbody></tbody>
+    </table>
+  </section>
+
+  <section id="secStructure">
+    <h2><span class="n">04</span>&nbsp; Market structure &amp; bias</h2>
+    <div class="grid2">
+      <div>
+        <p id="structureText"></p>
+      </div>
+      <div>
+        <table id="rsTable">
+          <thead><tr><th>Asset</th><th>24h %</th><th>7d %</th><th>vs peer set</th></tr></thead>
+          <tbody></tbody>
+        </table>
+        <div class="foot">Relative strength benchmarked against the four tracked assets (BTC, ETH, SOL, XAUT) — no external index/DXY feed is integrated in this build.</div>
+      </div>
+    </div>
+  </section>
+
+  <section id="secSetups">
+    <h2><span class="n">05</span>&nbsp; Trade setups</h2>
+    <table id="setupsTable">
+      <thead><tr><th>Setup</th><th>Trigger / entry</th><th>Invalidation (stop)</th><th>Target 1</th><th>Target 2</th><th>R:R</th><th>Confirmation needed</th></tr></thead>
+      <tbody></tbody>
+    </table>
+  </section>
+
+  <section id="secRisk">
+    <h2><span class="n">06</span>&nbsp; Risk notes</h2>
+    <div class="riskbox"><ul id="riskList"></ul></div>
+    <div style="margin-top:14px;">
+      <label class="small muted" for="catalystNotes" style="display:block;margin-bottom:6px;font-family:var(--mono);">Manual catalyst log (not fetched automatically — enter today's known events, stored in this browser only)</label>
+      <textarea id="catalystNotes" class="catalyst-input" placeholder="e.g. 13:30 UTC — US CPI print; 18:00 UTC — FOMC minutes"></textarea>
+    </div>
+  </section>
+
+  <section id="secAppendix">
+    <h2><span class="n">07</span>&nbsp; Appendix — last 10 daily candles</h2>
+    <table id="candlesTable">
+      <thead><tr><th>Date (UTC)</th><th>Open</th><th>High</th><th>Low</th><th>Close</th><th>Volume</th></tr></thead>
+      <tbody></tbody>
+    </table>
+  </section>
+
+  <div class="card-actions">
+    <button id="copyBtn">Copy brief as text</button>
+  </div>
+
+  <footer>
+    <div class="disclaimer">This output is analysis for trade-planning purposes only. It is not a recommendation to buy or sell any instrument.</div>
+    <div id="sourceNote" style="margin-top:6px;"></div>
+  </footer>
+
+</div>
+
+<script>
+"use strict";
+
+/* =========================================================================
+   CONFIG
+   ========================================================================= */
+const SYMBOL_MAP = { BTC:'BTCUSDT', ETH:'ETHUSDT', SOL:'SOLUSDT', XAUT:'XAUTUSDT' };
+const DISPLAY_NAME = { BTC:'BTC-USD', ETH:'ETH-USD', SOL:'SOL-USD', XAUT:'XAUT-USD' };
+const API = 'https://api.binance.com/api/v3';
+
+const STATE = {
+  symbol: 'BTC',
+  execTf: '1h',
+  loading: false,
+  lastFetch: null,
+  data: null,     // computed bundle for current symbol
+  peers: null,    // 24h ticker stats for all 4 symbols
+  errors: []      // list of {section, message}
+};
+
+/* =========================================================================
+   FORMAT HELPERS
+   ========================================================================= */
+function fmtPrice(n, dp){
+  if(n === null || n === undefined || isNaN(n)) return '—';
+  if(dp === undefined){
+    dp = Math.abs(n) >= 1000 ? 2 : (Math.abs(n) >= 1 ? 3 : 5);
+  }
+  return Number(n).toLocaleString('en-US', {minimumFractionDigits:dp, maximumFractionDigits:dp});
+}
+function fmtPct(n, dp=2){
+  if(n === null || n === undefined || isNaN(n)) return '—';
+  const s = (n*100).toFixed(dp);
+  return (n>=0?'+':'') + s + '%';
+}
+function fmtVol(n){
+  if(n === null || n === undefined || isNaN(n)) return '—';
+  if(n >= 1e9) return (n/1e9).toFixed(2)+'B';
+  if(n >= 1e6) return (n/1e6).toFixed(2)+'M';
+  if(n >= 1e3) return (n/1e3).toFixed(2)+'K';
+  return n.toFixed(2);
+}
+function fmtDate(ts){
+  const d = new Date(ts);
+  return d.toISOString().slice(0,10);
+}
+function fmtTime(ts){
+  const d = new Date(ts);
+  return d.toISOString().slice(11,19)+' UTC';
+}
+function dirClass(n){ return n>0 ? 'up' : (n<0 ? 'down' : ''); }
+
+/* =========================================================================
+   DATA FETCH
+   ========================================================================= */
+async function fetchJSON(url){
+  const res = await fetch(url);
+  if(!res.ok){
+    throw new Error(`HTTP ${res.status} on ${url}`);
+  }
+  return res.json();
+}
+
+function toCandle(k){
+  return {
+    openTime: k[0],
+    open: parseFloat(k[1]),
+    high: parseFloat(k[2]),
+    low: parseFloat(k[3]),
+    close: parseFloat(k[4]),
+    volume: parseFloat(k[5]),
+    closeTime: k[6],
+    quoteVolume: parseFloat(k[7]),
+    trades: k[8]
+  };
+}
+
+async function fetchKlines(pair, interval, limit){
+  const url = `${API}/klines?symbol=${pair}&interval=${interval}&limit=${limit}`;
+  const raw = await fetchJSON(url);
+  return raw.map(toCandle);
+}
+
+async function fetchTicker24hr(pair){
+  return fetchJSON(`${API}/ticker/24hr?symbol=${pair}`);
+}
+
+/* =========================================================================
+   MATH: EMA / ATR / PIVOTS / VWAP / VOLUME PROFILE / FIB / GAPS
+   ========================================================================= */
+function ema(values, period){
+  const out = new Array(values.length).fill(null);
+  if(values.length < period) return out;
+  const k = 2/(period+1);
+  let seed = 0;
+  for(let i=0;i<period;i++) seed += values[i];
+  seed /= period;
+  out[period-1] = seed;
+  for(let i=period;i<values.length;i++){
+    out[i] = values[i]*k + out[i-1]*(1-k);
+  }
+  return out;
+}
+
+function atrWilder(candles, period=14){
+  const tr = [];
+  for(let i=0;i<candles.length;i++){
+    if(i===0){ tr.push(candles[i].high - candles[i].low); continue; }
+    const c = candles[i], p = candles[i-1];
+    tr.push(Math.max(c.high-c.low, Math.abs(c.high-p.close), Math.abs(c.low-p.close)));
+  }
+  const out = new Array(tr.length).fill(null);
+  if(tr.length < period) return out;
+  let seed = 0;
+  for(let i=0;i<period;i++) seed += tr[i];
+  seed /= period;
+  out[period-1] = seed;
+  for(let i=period;i<tr.length;i++){
+    out[i] = (out[i-1]*(period-1) + tr[i]) / period;
+  }
+  return out;
+}
+
+function classicPivots(H,L,C){
+  const P = (H+L+C)/3;
+  return {
+    P,
+    R1: 2*P - L, S1: 2*P - H,
+    R2: P + (H-L), S2: P - (H-L),
+    R3: H + 2*(P-L), S3: L - 2*(H-P)
+  };
+}
+
+function anchoredVWAP(candles, anchorTime){
+  let sumPV = 0, sumV = 0;
+  for(const c of candles){
+    if(c.openTime >= anchorTime){
+      const tp = (c.high + c.low + c.close)/3;
+      sumPV += tp*c.volume;
+      sumV += c.volume;
+    }
+  }
+  return sumV > 0 ? sumPV/sumV : null;
+}
+
+function volumeProfile(candles, bins=30){
+  if(candles.length === 0) return null;
+  const highs = candles.map(c=>c.high), lows = candles.map(c=>c.low);
+  const max = Math.max(...highs), min = Math.min(...lows);
+  if(max === min) return null;
+  const width = (max-min)/bins;
+  const vols = new Array(bins).fill(0);
+  for(const c of candles){
+    const lo = c.low, hi = c.high;
+    const span = (hi-lo) || width;
+    for(let i=0;i<bins;i++){
+      const binLo = min + i*width, binHi = binLo + width;
+      const overlap = Math.max(0, Math.min(hi,binHi) - Math.max(lo,binLo));
+      if(overlap > 0) vols[i] += c.volume * (overlap/span);
+    }
+  }
+  const total = vols.reduce((a,b)=>a+b,0);
+  let pocIdx = 0;
+  for(let i=1;i<bins;i++) if(vols[i] > vols[pocIdx]) pocIdx = i;
+  let lo = pocIdx, hi = pocIdx, covered = vols[pocIdx];
+  while(covered/total < 0.70 && (lo>0 || hi<bins-1)){
+    const leftVol = lo>0 ? vols[lo-1] : -1;
+    const rightVol = hi<bins-1 ? vols[hi+1] : -1;
+    if(rightVol >= leftVol){ hi++; covered += vols[hi]; }
+    else { lo--; covered += vols[lo]; }
+  }
+  return {
+    poc: min + (pocIdx+0.5)*width,
+    vah: min + (hi+1)*width,
+    val: min + lo*width,
+    totalVolume: total
+  };
+}
+
+function findSwing(dailyCandles, lookback=60){
+  const arr = dailyCandles.slice(-lookback);
+  if(arr.length < 2) return null;
+  let hiC = arr[0], loC = arr[0];
+  for(const c of arr){
+    if(c.high > hiC.high) hiC = c;
+    if(c.low < loC.low) loC = c;
+  }
+  const direction = hiC.openTime > loC.openTime ? 'up' : 'down';
+  return {swingHigh:hiC.high, swingHighTime:hiC.openTime, swingLow:loC.low, swingLowTime:loC.openTime, direction};
+}
+
+function fibLevels(swing){
+  if(!swing) return null;
+  const {swingHigh, swingLow, direction} = swing;
+  const range = swingHigh - swingLow;
+  const ratios = [0, 0.236, 0.382, 0.5, 0.618, 0.786, 1];
+  const retracements = ratios.map(r => ({
+    ratio: r,
+    price: direction === 'up' ? swingHigh - range*r : swingLow + range*r
+  }));
+  const extRatios = [1.272, 1.618];
+  const extensions = extRatios.map(r => ({
+    ratio: r,
+    price: direction === 'up' ? swingHigh + range*(r-1) : swingLow - range*(r-1)
+  }));
+  return {direction, swingHigh, swingLow, retracements, extensions};
+}
+
+function findUnfilledGaps(dailyCandles, thresholdPct=0.005){
+  const gaps = [];
+  for(let i=1;i<dailyCandles.length;i++){
+    const prevClose = dailyCandles[i-1].close, open = dailyCandles[i].open;
+    const diffPct = (open - prevClose)/prevClose;
+    if(Math.abs(diffPct) > thresholdPct){
+      gaps.push({date: dailyCandles[i].openTime, from: prevClose, to: open, pct: diffPct, idx: i});
+    }
+  }
+  for(const g of gaps){
+    const lo = Math.min(g.from, g.to), hi = Math.max(g.from, g.to);
+    g.filled = false;
+    for(let j=g.idx; j<dailyCandles.length; j++){
+      if(dailyCandles[j].low <= hi && dailyCandles[j].high >= lo){ g.filled = true; break; }
+    }
+  }
+  return gaps.filter(g=>!g.filled);
+}
+
+/* =========================================================================
+   MAIN PIPELINE
+   ========================================================================= */
+async function loadAll(){
+  if(STATE.loading) return;
+  STATE.loading = true;
+  STATE.errors = [];
+  setStatus('loading', 'Fetching live data from Binance…');
+  document.getElementById('errorBanner').style.display = 'none';
+
+  const symbol = STATE.symbol;
+  const pair = SYMBOL_MAP[symbol];
+  const execInterval = STATE.execTf;
+  const execLimit = execInterval === '15m' ? 1000 : 500;
+
+  let daily=null, hourly=null, exec=null, ticker=null, peerTickers=null;
+
+  try{
+    [daily, hourly, exec, ticker] = await Promise.all([
+      fetchKlines(pair, '1d', 300),
+      fetchKlines(pair, '1h', 220),
+      fetchKlines(pair, execInterval, execLimit),
+      fetchTicker24hr(pair)
+    ]);
+  } catch(e){
+    STATE.errors.push({section:'core', message: e.message});
+  }
+
+  try{
+    const entries = await Promise.all(Object.entries(SYMBOL_MAP).map(async ([sym, p]) => {
+      const t = await fetchTicker24hr(p);
+      return [sym, t];
+    }));
+    peerTickers = Object.fromEntries(entries);
+  } catch(e){
+    STATE.errors.push({section:'peers', message: e.message});
+  }
+
+  STATE.lastFetch = Date.now();
+  STATE.loading = false;
+
+  if(!daily || !hourly || !exec || !ticker){
+    setStatus('error', 'Live data fetch failed — see banner below.');
+    showErrorBanner();
+    STATE.data = null;
+    render();
+    return;
+  }
+
+  STATE.peers = peerTickers;
+  STATE.data = computeBundle({symbol, pair, daily, hourly, exec, ticker, execInterval});
+  setStatus('live', `Live — Binance spot, fetched ${fmtTime(STATE.lastFetch)}`);
+  render();
+}
+
+function computeBundle({symbol, pair, daily, hourly, exec, ticker, execInterval}){
+  const last = daily[daily.length-1];
+  const prev = daily[daily.length-2];
+  const prevPrev = daily[daily.length-3];
+  const lastPrice = parseFloat(ticker.lastPrice);
+
+  // Prior day OHLC (most recently CLOSED daily candle relative to "today")
+  const prevDay = { open: prev.open, high: prev.high, low: prev.low, close: prev.close, openTime: prev.openTime };
+
+  // Prior day VWAP from hourly candles within prior day's UTC window
+  const prevDayStart = prev.openTime, prevDayEnd = prev.closeTime;
+  const prevDayHourly = hourly.filter(c => c.openTime >= prevDayStart && c.openTime <= prevDayEnd);
+  const prevDayVWAP = prevDayHourly.length ? anchoredVWAP(prevDayHourly, prevDayStart) : null;
+
+  // Today's session VWAP, anchored from today's UTC 00:00
+  const todayStart = last.openTime;
+  const todayHourly = hourly.filter(c => c.openTime >= todayStart);
+  const sessionVWAPVal = todayHourly.length ? anchoredVWAP(todayHourly, todayStart) : anchoredVWAP(hourly, todayStart);
+
+  // Volume vs 20-day average (last 20 CLOSED daily candles, excluding the still-forming one)
+  const closedDaily = daily.slice(0, -1);
+  const last20 = closedDaily.slice(-20);
+  const avgVol20 = last20.length ? last20.reduce((a,c)=>a+c.volume,0)/last20.length : null;
+  const currentVolume24h = parseFloat(ticker.volume);
+
+  // Session ranges for today (Asian/London/US, UTC buckets) + prior "overnight" (prior US close -> today Asian open)
+  const sessionsToday = computeSessionRanges(todayHourly);
+  const priorDayHourly = hourly.filter(c => c.openTime >= prevDayStart && c.openTime < todayStart);
+  const overnightRange = computeOvernightRange(priorDayHourly, todayHourly);
+
+  // Pivots from prior day OHLC
+  const pivots = classicPivots(prevDay.high, prevDay.low, prevDay.close);
+
+  // EMAs on daily closes
+  const dailyCloses = daily.map(c=>c.close);
+  const ema9 = ema(dailyCloses, 9), ema20 = ema(dailyCloses, 20), ema50 = ema(dailyCloses, 50), ema200 = ema(dailyCloses, 200);
+  const lastIdx = dailyCloses.length - 1;
+  const emaVals = {
+    ema9: ema9[lastIdx], ema20: ema20[lastIdx], ema50: ema50[lastIdx], ema200: ema200[lastIdx]
+  };
+
+  // ATR on daily and on execution timeframe
+  const atrDaily = atrWilder(daily, 14);
+  const atrDailyVal = atrDaily[atrDaily.length-1];
+  const atrDailyPrior = atrDaily.slice(-21, -1).filter(v=>v!==null);
+  const atrDailyAvg20 = atrDailyPrior.length ? atrDailyPrior.reduce((a,b)=>a+b,0)/atrDailyPrior.length : null;
+
+  const atrExec = atrWilder(exec, 14);
+  const atrExecVal = atrExec[atrExec.length-1];
+  const atrExecPrior = atrExec.slice(-21,-1).filter(v=>v!==null);
+  const atrExecAvg20 = atrExecPrior.length ? atrExecPrior.reduce((a,b)=>a+b,0)/atrExecPrior.length : null;
+
+  // Volume profile over last 5 / 10 / 20 daily sessions, using hourly candles within those windows
+  const vp5 = volumeProfileForDays(closedDaily, hourly, 5);
+  const vp10 = volumeProfileForDays(closedDaily, hourly, 10);
+  const vp20 = volumeProfileForDays(closedDaily, hourly, 20);
+
+  // Fibonacci from most recent significant swing (60-day lookback on daily candles)
+  const swing = findSwing(closedDaily, 60);
+  const fib = fibLevels(swing);
+
+  // Unfilled gaps
+  const gaps = findUnfilledGaps(closedDaily.slice(-60));
+
+  // Trend / regime
+  const htfTrend = classifyHTFTrend(lastPrice, emaVals);
+  const intradayTrend = classifyIntradayTrend(exec, sessionVWAPVal);
+  const regime = classifyRegime(lastPrice, vp20, currentVolume24h, avgVol20, atrExecVal, atrExecAvg20);
+
+  return {
+    symbol, pair, lastPrice, ticker,
+    daily, hourly, exec, execInterval,
+    last10Daily: daily.slice(-11, -1), // last 10 CLOSED candles
+    prevDay, prevDayVWAP, sessionVWAP: sessionVWAPVal,
+    avgVol20, currentVolume24h,
+    sessionsToday, overnightRange,
+    pivots, emaVals, atrDailyVal, atrDailyAvg20, atrExecVal, atrExecAvg20,
+    vp5, vp10, vp20,
+    swing, fib, gaps,
+    htfTrend, intradayTrend, regime,
+    fetchedAt: Date.now()
+  };
+}
+
+function volumeProfileForDays(closedDaily, hourly, n){
+  const days = closedDaily.slice(-n);
+  if(days.length === 0) return null;
+  const start = days[0].openTime, end = days[days.length-1].closeTime;
+  const window = hourly.filter(c => c.openTime >= start && c.openTime <= end);
+  const candles = window.length ? window : days; // fall back to daily granularity if hourly window is short
+  const vp = volumeProfile(candles, 30);
+  return vp ? {...vp, n, hourlyPoints: window.length} : null;
+}
+
+function computeSessionRanges(todayHourly){
+  const buckets = { asian: [0,8], london: [8,13], us: [13,21], late: [21,24] };
+  const out = {};
+  for(const [name, [startH, endH]] of Object.entries(buckets)){
+    const inBucket = todayHourly.filter(c => {
+      const h = new Date(c.openTime).getUTCHours();
+      return h >= startH && h < endH;
+    });
+    if(inBucket.length){
+      out[name] = {
+        high: Math.max(...inBucket.map(c=>c.high)),
+        low: Math.min(...inBucket.map(c=>c.low)),
+        volume: inBucket.reduce((a,c)=>a+c.volume,0)
+      };
+    } else {
+      out[name] = null;
+    }
+  }
+  return out;
+}
+
+function computeOvernightRange(priorDayHourly, todayHourly){
+  // "Overnight" proxy for a 24/7 market: prior US session close (21:00 UTC) through today's Asian open (00:00-08:00 UTC)
+  const priorLate = priorDayHourly.filter(c => new Date(c.openTime).getUTCHours() >= 21);
+  const todayAsian = todayHourly.filter(c => new Date(c.openTime).getUTCHours() < 8);
+  const combined = [...priorLate, ...todayAsian];
+  if(combined.length === 0) return null;
+  return {
+    high: Math.max(...combined.map(c=>c.high)),
+    low: Math.min(...combined.map(c=>c.low)),
+    volume: combined.reduce((a,c)=>a+c.volume,0),
+    candleCount: combined.length
+  };
+}
+
+function classifyHTFTrend(price, emaVals){
+  const {ema50, ema200} = emaVals;
+  if(ema50 === null || ema200 === null) return {label:'insufficient history', dir:'flat'};
+  if(price > ema50 && ema50 > ema200) return {label:'uptrend (price > 50EMA > 200EMA)', dir:'up'};
+  if(price < ema50 && ema50 < ema200) return {label:'downtrend (price < 50EMA < 200EMA)', dir:'down'};
+  return {label:'mixed / transitional (EMA stack not aligned)', dir:'mixed'};
+}
+
+function classifyIntradayTrend(exec, vwap){
+  if(exec.length < 5 || vwap === null) return {label:'insufficient data', dir:'flat'};
+  const last3 = exec.slice(-3).map(c=>c.close);
+  const rising = last3[2] > last3[0];
+  const price = exec[exec.length-1].close;
+  if(price > vwap && rising) return {label:'bullish (price above session VWAP, closes rising)', dir:'up'};
+  if(price < vwap && !rising) return {label:'bearish (price below session VWAP, closes falling)', dir:'down'};
+  return {label:'choppy / two-sided around VWAP', dir:'mixed'};
+}
+
+function classifyRegime(price, vp20, currentVol24h, avgVol20, atrExecVal, atrExecAvg20){
+  if(!vp20) return {label:'volume profile unavailable', expansion:false};
+  const volExpanding = (avgVol20 && currentVol24h) ? currentVol24h > avgVol20*1.15 : false;
+  const atrExpanding = (atrExecVal && atrExecAvg20) ? atrExecVal > atrExecAvg20*1.15 : false;
+  let label;
+  if(price > vp20.vah) label = volExpanding ? 'trending above 20-session value area, volume expansion' : 'probing above 20-session value area on average volume';
+  else if(price < vp20.val) label = volExpanding ? 'trending below 20-session value area, volume expansion' : 'probing below 20-session value area on average volume';
+  else label = 'balancing inside the 20-session value area';
+  return {label, volExpanding, atrExpanding};
+}
+
+/* =========================================================================
+   TRADE SETUP GENERATION (rule-based, references computed levels only)
+   ========================================================================= */
+function generateSetups(d){
+  const setups = [];
+  const price = d.lastPrice;
+  const atr = d.atrExecVal;
+  const tfLabel = d.execInterval;
+
+  if(atr === null || !d.vp20 || !d.pivots){
+    return setups;
+  }
+
+  // 1. Breakout / continuation above value + R1
+  {
+    const entry = Math.max(d.vp20.vah, d.pivots.R1);
+    const stop = entry - 1.0*atr;
+    const t1 = d.pivots.R2;
+    const t2 = d.pivots.R3;
+    const risk = entry - stop;
+    const reward1 = t1 - entry;
+    setups.push({
+      name: 'Breakout continuation (long)',
+      trigger: `Acceptance above ${fmtPrice(entry)} (higher of 20-session VAH ${fmtPrice(d.vp20.vah)} and floor pivot R1 ${fmtPrice(d.pivots.R1)}) — invalid if price re-enters value area without volume support`,
+      stop: `${fmtPrice(stop)} (entry − 1× ${tfLabel} ATR of ${fmtPrice(atr)})`,
+      t1: fmtPrice(t1) + ' (pivot R2)',
+      t2: fmtPrice(t2) + ' (pivot R3)',
+      rr: risk>0 ? (reward1/risk).toFixed(2) : '—',
+      confirm: `${tfLabel} closing volume > 20-period average and hold above trigger for one full ${tfLabel} bar`
+    });
+  }
+
+  // 2. Mean reversion fade at value area edges
+  {
+    const nearUpper = Math.abs(price - d.vp20.vah) <= Math.abs(price - d.vp20.val);
+    const level = nearUpper ? d.vp20.vah : d.vp20.val;
+    const otherLevel = nearUpper ? d.pivots.R1 : d.pivots.S1;
+    const entry = level;
+    const stop = nearUpper ? entry + 1.0*atr : entry - 1.0*atr;
+    const t1 = d.vp20.poc;
+    const t2 = nearUpper ? d.vp20.val : d.vp20.vah;
+    const risk = Math.abs(entry-stop);
+    const reward1 = Math.abs(t1-entry);
+    setups.push({
+      name: nearUpper ? 'Fade at value area high (short)' : 'Fade at value area low (long)',
+      trigger: `Rejection wick / failed break at ${fmtPrice(entry)} (20-session ${nearUpper?'VAH':'VAL'}, near floor pivot ${nearUpper?'R1 '+fmtPrice(d.pivots.R1):'S1 '+fmtPrice(d.pivots.S1)}) confirmed by a ${tfLabel} close back inside the value area`,
+      stop: `${fmtPrice(stop)} (entry ${nearUpper?'+':'−'} 1× ${tfLabel} ATR of ${fmtPrice(atr)})`,
+      t1: fmtPrice(t1) + ' (20-session POC)',
+      t2: fmtPrice(t2) + ' (opposite value area edge)',
+      rr: risk>0 ? (reward1/risk).toFixed(2) : '—',
+      confirm: `Declining ${tfLabel} volume into the level (exhaustion) plus a rejection wick ≥ 50% of bar range`
+    });
+  }
+
+  // 3. Trend continuation with EMA / VWAP pullback
+  {
+    const trendUp = d.htfTrend.dir === 'up';
+    const trendDown = d.htfTrend.dir === 'down';
+    if(trendUp || trendDown){
+      const pullbackLevel = d.sessionVWAP !== null ? d.sessionVWAP : d.emaVals.ema20;
+      const entry = pullbackLevel;
+      const stop = trendUp ? entry - 1.25*atr : entry + 1.25*atr;
+      const t1 = trendUp ? d.pivots.R2 : d.pivots.S2;
+      const t2 = trendUp ? (d.swing ? d.swing.swingHigh : d.pivots.R3) : (d.swing ? d.swing.swingLow : d.pivots.S3);
+      const risk = Math.abs(entry-stop);
+      const reward1 = Math.abs(t1-entry);
+      setups.push({
+        name: trendUp ? 'Trend-continuation pullback (long)' : 'Trend-continuation pullback (short)',
+        trigger: `Pullback into session VWAP / 20EMA confluence near ${fmtPrice(entry)}, entered on a ${tfLabel} reversal candle in the direction of the daily trend (${d.htfTrend.label})`,
+        stop: `${fmtPrice(stop)} (entry ${trendUp?'−':'+'} 1.25× ${tfLabel} ATR of ${fmtPrice(atr)})`,
+        t1: fmtPrice(t1) + (trendUp ? ' (pivot R2)' : ' (pivot S2)'),
+        t2: fmtPrice(t2) + (d.swing ? ' (recent swing extreme)' : ' (pivot R3/S3)'),
+        rr: risk>0 ? (reward1/risk).toFixed(2) : '—',
+        confirm: `Daily trend intact (price ${trendUp?'above':'below'} 50EMA/200EMA) and ${tfLabel} volume confirming the reversal candle`
+      });
+    }
+  }
+
+  return setups;
+}
+
+/* =========================================================================
+   RENDER
+   ========================================================================= */
+function setStatus(kind, text){
+  const el = document.getElementById('status');
+  el.className = 'status ' + (kind==='live' ? 'live' : (kind==='error' ? 'error' : ''));
+  document.getElementById('statusText').textContent = text;
+}
+
+function showErrorBanner(){
+  const el = document.getElementById('errorBanner');
+  const msgs = STATE.errors.map(e => `[${e.section}] ${e.message}`).join('  •  ');
+  el.textContent = `Live data unavailable — no levels are being fabricated or estimated in this state. Details: ${msgs}. Try Refresh, or check your network / Binance API availability.`;
+  el.style.display = 'block';
+}
+
+function render(){
+  const symbol = STATE.symbol;
+  document.getElementById('brandTitle').textContent =
+    `${DISPLAY_NAME[symbol]} — Pre-Market Desk Brief — ${new Date().toISOString().slice(0,10)}`;
+
+  if(!STATE.data){
+    document.getElementById('lede').textContent = 'No live data available for this instrument right now — see error banner above. No estimated levels are shown to avoid presenting fabricated numbers.';
+    ['checklist','levelsTable','setupsTable','riskList','candlesTable','rsTable'].forEach(id=>{
+      const el = document.getElementById(id);
+      if(el.tagName === 'TABLE') el.querySelector('tbody').innerHTML = '';
+      else el.innerHTML = '';
+    });
+    document.getElementById('structureText').textContent = '';
+    return;
+  }
+
+  const d = STATE.data;
+  renderLede(d);
+  renderChecklist(d);
+  renderLevels(d);
+  renderStructure(d);
+  renderSetups(d);
+  renderRisk(d);
+  renderCandles(d);
+  document.getElementById('sourceNote').textContent =
+    `Source: Binance public spot REST API (api.binance.com), symbol ${d.pair}. Data pulled ${new Date(d.fetchedAt).toISOString()}. All levels below are computed client-side in this page from that data — nothing is server-cached or pre-generated.`;
+}
+
+function renderLede(d){
+  const price = d.lastPrice;
+  const bias = d.htfTrend.dir === d.intradayTrend.dir && d.htfTrend.dir !== 'mixed' && d.htfTrend.dir !== 'flat'
+    ? d.htfTrend.dir : 'neutral';
+  const conflict = (d.htfTrend.dir !== d.intradayTrend.dir) && d.htfTrend.dir !== 'flat' && d.intradayTrend.dir !== 'flat';
+
+  const biasWord = bias === 'up' ? 'Bullish' : bias === 'down' ? 'Bearish' : 'Neutral / mixed';
+  const el = document.getElementById('lede');
+  el.className = 'lede ' + (bias==='up' ? 'bias-bull' : bias==='down' ? 'bias-bear' : 'bias-neutral');
+
+  const vwapRel = d.sessionVWAP !== null ? (price > d.sessionVWAP ? 'above' : 'below') : null;
+  const vaRel = d.vp20 ? (price > d.vp20.vah ? 'above the value area' : price < d.vp20.val ? 'below the value area' : 'inside the value area') : 'value area unavailable';
+
+  let text = `<strong>${biasWord}.</strong> ${DISPLAY_NAME[d.symbol]} trades at ${fmtPrice(price)}, `;
+  text += `${vwapRel ? `sitting ${vwapRel} today's session VWAP (${fmtPrice(d.sessionVWAP)}) ` : ''}`;
+  text += `and ${vaRel} (VAH ${d.vp20?fmtPrice(d.vp20.vah):'—'} / VAL ${d.vp20?fmtPrice(d.vp20.val):'—'}, 20-session). `;
+  text += `Daily structure is ${d.htfTrend.label}${conflict ? `, which <span class="flag">conflicts</span> with the ${d.intradayTrend.label} intraday tape` : ` and intraday flow is ${d.intradayTrend.label}`}.`;
+  el.innerHTML = text;
+}
+
+function renderChecklist(d){
+  const items = [
+    {ok:true, label:'Last 10 daily candles (OHLCV)', detail:`Loaded from Binance 1d klines, ${d.last10Daily.length} candles.`},
+    {ok:true, label:"Prior day OHLC + prior day VWAP", detail:`PDH ${fmtPrice(d.prevDay.high)} / PDL ${fmtPrice(d.prevDay.low)} / PDC ${fmtPrice(d.prevDay.close)}; VWAP ${d.prevDayVWAP!==null?fmtPrice(d.prevDayVWAP):'insufficient 1h coverage — flagged'}.`},
+    {ok:true, label:'Current price + volume vs 20-day average volume', detail:`Last ${fmtPrice(d.lastPrice)}; 24h volume ${fmtVol(d.currentVolume24h)} vs 20-day avg ${d.avgVol20?fmtVol(d.avgVol20):'—'}.`},
+    {ok:!!d.overnightRange, label:'Overnight / after-hours range proxy', detail: d.overnightRange ? `Prior US close → today's Asian session range: H ${fmtPrice(d.overnightRange.high)} / L ${fmtPrice(d.overnightRange.low)}. Crypto trades 24/7 — this is a session-window proxy, not a true closed-market gap.` : 'Insufficient hourly coverage for this window.'},
+    {ok:false, label:'Scheduled catalysts (earnings / CPI / FOMC / NFP / sector news)', detail:'Not fetched automatically — no news/economic-calendar feed is wired into this build. Use the manual catalyst log in Section 06.'},
+    {ok:false, label:'Options data (put/call skew, gamma exposure, max pain)', detail:'Not integrated in this build. Note: this brief is built from Binance SPOT data, not futures/options — flagging per the zero-fabrication standard rather than guessing.'}
+  ];
+  const ul = document.getElementById('checklist');
+  ul.innerHTML = items.map(it => `
+    <li>
+      <span class="mark ${it.ok?'ok':'no'}">${it.ok?'✓':'✗'}</span>
+      <span><span class="label">${it.label}</span><span class="detail">${it.detail}</span></span>
+    </li>`).join('');
+}
+
+function renderLevels(d){
+  const rows = [];
+  rows.push(['Prior day high', fmtPrice(d.prevDay.high), 'PDH — high of the most recently closed daily (1d) candle']);
+  rows.push(['Prior day low', fmtPrice(d.prevDay.low), 'PDL — low of the most recently closed daily candle']);
+  rows.push(['Prior day close', fmtPrice(d.prevDay.close), 'PDC — close of the most recently closed daily candle']);
+  rows.push(['Prior day VWAP', d.prevDayVWAP!==null?fmtPrice(d.prevDayVWAP):'—', 'Σ(typical price × vol) / Σ(vol) over 1h candles inside the prior UTC day']);
+  rows.push(['Session VWAP (today)', d.sessionVWAP!==null?fmtPrice(d.sessionVWAP):'—', 'Anchored from today 00:00 UTC (session open), 1h candles']);
+  rows.push(['Pivot (P)', fmtPrice(d.pivots.P), '(PDH + PDL + PDC) / 3']);
+  rows.push(['R1 / S1', `${fmtPrice(d.pivots.R1)} / ${fmtPrice(d.pivots.S1)}`, 'R1 = 2P−PDL · S1 = 2P−PDH']);
+  rows.push(['R2 / S2', `${fmtPrice(d.pivots.R2)} / ${fmtPrice(d.pivots.S2)}`, 'R2 = P+(PDH−PDL) · S2 = P−(PDH−PDL)']);
+  rows.push(['R3 / S3', `${fmtPrice(d.pivots.R3)} / ${fmtPrice(d.pivots.S3)}`, 'R3 = PDH+2(P−PDL) · S3 = PDL−2(PDH−P)']);
+  if(d.vp5) rows.push(['POC / VAH / VAL (5-session)', `${fmtPrice(d.vp5.poc)} / ${fmtPrice(d.vp5.vah)} / ${fmtPrice(d.vp5.val)}`, `Volume histogram (30 bins) over last 5 daily sessions, ${d.vp5.hourlyPoints} hourly candles; value area = 70% of volume around POC`]);
+  if(d.vp10) rows.push(['POC / VAH / VAL (10-session)', `${fmtPrice(d.vp10.poc)} / ${fmtPrice(d.vp10.vah)} / ${fmtPrice(d.vp10.val)}`, `Same method, last 10 daily sessions, ${d.vp10.hourlyPoints} hourly candles`]);
+  if(d.vp20) rows.push(['POC / VAH / VAL (20-session)', `${fmtPrice(d.vp20.poc)} / ${fmtPrice(d.vp20.vah)} / ${fmtPrice(d.vp20.val)}`, `Same method, last 20 daily sessions, ${d.vp20.hourlyPoints} hourly candles`]);
+  const e = d.emaVals;
+  const eRow = (label, val) => rows.push([label, val!==null?fmtPrice(val):'insufficient history', `${val!==null ? (d.lastPrice>val?'Price is above':'Price is below') : ''} — daily close basis`]);
+  eRow('EMA 9', e.ema9); eRow('EMA 20', e.ema20); eRow('EMA 50', e.ema50); eRow('EMA 200', e.ema200);
+  rows.push([`ATR(14) — ${d.execInterval}`, d.atrExecVal!==null?fmtPrice(d.atrExecVal):'—', `Wilder ATR, 14-period, on the ${d.execInterval} execution timeframe — use for stop sizing`]);
+  rows.push(['ATR(14) — daily', d.atrDailyVal!==null?fmtPrice(d.atrDailyVal):'—', `Wilder ATR, 14-period, daily candles (context only, avg-20 = ${d.atrDailyAvg20?fmtPrice(d.atrDailyAvg20):'—'})`]);
+  if(d.fib){
+    const swingLabel = `${d.fib.direction==='up'?'swing low → swing high':'swing high → swing low'} (${fmtDate(d.swing.swingLowTime)} → ${fmtDate(d.swing.swingHighTime)}, 60-day lookback)`;
+    d.fib.retracements.forEach(r => rows.push([`Fib ${(r.ratio*100).toFixed(1)}%`, fmtPrice(r.price), swingLabel]));
+    d.fib.extensions.forEach(r => rows.push([`Fib ext ${(r.ratio*100).toFixed(1)}%`, fmtPrice(r.price), 'Extension beyond the same swing']));
+  }
+  if(d.gaps.length){
+    d.gaps.forEach(g => rows.push([`Unfilled gap (${fmtDate(g.date)})`, `${fmtPrice(Math.min(g.from,g.to))} – ${fmtPrice(Math.max(g.from,g.to))}`, `Daily open vs prior close, ${fmtPct(g.pct)} — not yet retraded`]));
+  } else {
+    rows.push(['Unfilled gaps', 'none detected', 'Daily open-vs-prior-close check over the last 60 sessions, 0.5% threshold']);
+  }
+
+  const tbody = document.querySelector('#levelsTable tbody');
+  tbody.innerHTML = rows.map(r => `<tr><td>${r[0]}</td><td class="num">${r[1]}</td><td class="method">${r[2]}</td></tr>`).join('');
+}
+
+function renderStructure(d){
+  const conflict = d.htfTrend.dir !== d.intradayTrend.dir && d.htfTrend.dir !== 'flat' && d.intradayTrend.dir !== 'flat';
+  let text = `Higher-timeframe (daily) trend: <strong>${d.htfTrend.label}</strong>. Intraday (${d.execInterval}) trend: <strong>${d.intradayTrend.label}</strong>.`;
+  text += conflict ? ` <span class="flag">These conflict</span> — treat breakout setups with reduced size until they align.` : ' These are aligned.';
+  text += ` Regime read: <strong>${d.regime.label}</strong>.`;
+  if(d.regime.volExpanding) text += ' 24h volume is running >15% above the 20-day average.';
+  if(d.regime.atrExpanding) text += ` ${d.execInterval} ATR is running >15% above its 20-period average — volatility expansion.`;
+  document.getElementById('structureText').innerHTML = text;
+
+  const tbody = document.querySelector('#rsTable tbody');
+  if(!STATE.peers){
+    tbody.innerHTML = `<tr><td colspan="4" class="muted">Peer ticker data unavailable this fetch.</td></tr>`;
+    return;
+  }
+  const rows = Object.entries(STATE.peers).map(([sym, t]) => {
+    const chg = parseFloat(t.priceChangePercent)/100;
+    return {sym, chg24h: chg};
+  });
+  const avg = rows.reduce((a,r)=>a+r.chg24h,0)/rows.length;
+  rows.sort((a,b)=>b.chg24h-a.chg24h);
+  tbody.innerHTML = rows.map(r => `
+    <tr class="${r.sym===d.symbol?'':''}">
+      <td>${r.sym===d.symbol?'<strong>':''}${DISPLAY_NAME[r.sym]}${r.sym===d.symbol?'</strong>':''}</td>
+      <td class="num ${dirClass(r.chg24h)}">${fmtPct(r.chg24h)}</td>
+      <td class="num muted">n/a (7d needs deeper history)</td>
+      <td class="num ${dirClass(r.chg24h-avg)}">${r.chg24h>avg?'stronger than peer set':'weaker than peer set'}</td>
+    </tr>`).join('');
+}
+
+function renderSetups(d){
+  const setups = generateSetups(d);
+  const tbody = document.querySelector('#setupsTable tbody');
+  if(setups.length === 0){
+    tbody.innerHTML = `<tr><td colspan="7" class="muted">Insufficient data to build rule-based setups this fetch (missing ATR, pivots, or volume profile).</td></tr>`;
+    return;
+  }
+  tbody.innerHTML = setups.map(s => `
+    <tr>
+      <td><strong>${s.name}</strong></td>
+      <td class="small">${s.trigger}</td>
+      <td class="small">${s.stop}</td>
+      <td class="num">${s.t1}</td>
+      <td class="num">${s.t2}</td>
+      <td class="num">${s.rr}</td>
+      <td class="small">${s.confirm}</td>
+    </tr>`).join('');
+}
+
+function renderRisk(d){
+  const items = [];
+  items.push({crit:true, text:'No economic-calendar or earnings feed is integrated — manually confirm today\'s CPI/FOMC/NFP/sector-news schedule before sizing any of the setups above, and log it in the manual catalyst box.'});
+  items.push({crit:false, text:`Options data (skew / gamma / max pain) is not available in this build — flagged rather than estimated. This is spot data only; futures basis and funding are not reflected.`});
+  const atrNote = (d.atrExecVal && d.atrExecAvg20)
+    ? `${d.execInterval} ATR(14) is ${fmtPrice(d.atrExecVal)} vs its 20-period average of ${fmtPrice(d.atrExecAvg20)} (${fmtPct((d.atrExecVal-d.atrExecAvg20)/d.atrExecAvg20)}) — ${d.atrExecVal>d.atrExecAvg20*1.15?'volatility expansion, size down':'volatility in-line/contracted'}.`
+    : 'ATR comparison unavailable this fetch.';
+  items.push({crit:false, text: atrNote});
+  const volNote = (d.currentVolume24h && d.avgVol20)
+    ? `24h traded volume ${fmtVol(d.currentVolume24h)} vs 20-day daily average ${fmtVol(d.avgVol20)} (${fmtPct((d.currentVolume24h-d.avgVol20)/d.avgVol20)}).`
+    : 'Volume comparison unavailable this fetch.';
+  items.push({crit:false, text: volNote});
+  items.push({crit:false, text:'Crypto trades 24/7 — funding-rate resets on perpetual futures (typically 00:00 / 08:00 / 16:00 UTC) can move spot via arbitrage flow even though this brief does not pull funding data directly.'});
+  const ul = document.getElementById('riskList');
+  ul.innerHTML = items.map(it => `<li class="${it.crit?'crit':''}">${it.text}</li>`).join('');
+}
+
+function renderCandles(d){
+  const tbody = document.querySelector('#candlesTable tbody');
+  tbody.innerHTML = d.last10Daily.slice().reverse().map(c => `
+    <tr>
+      <td>${fmtDate(c.openTime)}</td>
+      <td class="num">${fmtPrice(c.open)}</td>
+      <td class="num">${fmtPrice(c.high)}</td>
+      <td class="num">${fmtPrice(c.low)}</td>
+      <td class="num">${fmtPrice(c.close)}</td>
+      <td class="num">${fmtVol(c.volume)}</td>
+    </tr>`).join('');
+}
+
+/* =========================================================================
+   TEXT EXPORT
+   ========================================================================= */
+function buildPlainText(){
+  const d = STATE.data;
+  if(!d) return 'No live data available.';
+  let out = '';
+  out += `PRE-MARKET DESK BRIEF — ${DISPLAY_NAME[d.symbol]} — ${new Date().toISOString().slice(0,10)}\n`;
+  out += `Source: Binance spot REST API, ${d.pair}, fetched ${new Date(d.fetchedAt).toISOString()}\n\n`;
+  out += `SUMMARY\n${document.getElementById('lede').textContent}\n\n`;
+  out += `KEY LEVELS\n`;
+  document.querySelectorAll('#levelsTable tbody tr').forEach(tr=>{
+    const c = tr.querySelectorAll('td');
+    out += `- ${c[0].textContent}: ${c[1].textContent}  [${c[2].textContent}]\n`;
+  });
+  out += `\nMARKET STRUCTURE\n${document.getElementById('structureText').textContent}\n\n`;
+  out += `TRADE SETUPS\n`;
+  document.querySelectorAll('#setupsTable tbody tr').forEach(tr=>{
+    const c = tr.querySelectorAll('td');
+    if(c.length<7) return;
+    out += `- ${c[0].textContent}\n  Trigger: ${c[1].textContent}\n  Stop: ${c[2].textContent}\n  T1: ${c[3].textContent}  T2: ${c[4].textContent}  R:R ${c[5].textContent}\n  Confirmation: ${c[6].textContent}\n`;
+  });
+  out += `\nRISK NOTES\n`;
+  document.querySelectorAll('#riskList li').forEach(li=> out += `- ${li.textContent}\n`);
+  const catalysts = document.getElementById('catalystNotes').value.trim();
+  if(catalysts) out += `\nMANUAL CATALYST LOG\n${catalysts}\n`;
+  out += `\nAnalysis for trade-planning purposes only — not a recommendation to buy or sell.\n`;
+  return out;
+}
+
+/* =========================================================================
+   WIRE UP UI
+   ========================================================================= */
+document.getElementById('symbolSelect').addEventListener('change', (e)=>{
+  STATE.symbol = e.target.value;
+  loadAll();
+});
+document.querySelectorAll('.tf-group button').forEach(btn=>{
+  btn.addEventListener('click', ()=>{
+    document.querySelectorAll('.tf-group button').forEach(b=>b.classList.remove('active'));
+    btn.classList.add('active');
+    STATE.execTf = btn.dataset.tf;
+    loadAll();
+  });
+});
+document.getElementById('refreshBtn').addEventListener('click', loadAll);
+document.getElementById('copyBtn').addEventListener('click', async ()=>{
+  const txt = buildPlainText();
+  try{
+    await navigator.clipboard.writeText(txt);
+    const btn = document.getElementById('copyBtn');
+    const orig = btn.textContent;
+    btn.textContent = 'Copied ✓';
+    setTimeout(()=>btn.textContent = orig, 1500);
+  } catch(e){
+    alert('Copy failed — select and copy the brief manually.\n\n' + txt.slice(0,200) + '…');
+  }
+});
+let autoTimer = null;
+document.getElementById('autoRefresh').addEventListener('change', (e)=>{
+  if(e.target.checked){
+    autoTimer = setInterval(loadAll, 60000);
+  } else if(autoTimer){
+    clearInterval(autoTimer);
+  }
+});
+
+/* boot */
+loadAll();
+</script>
+</body>
+</html>
