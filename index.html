@@ -158,18 +158,26 @@
   .chart-legend{display:flex;flex-wrap:wrap;gap:14px;font-family:var(--mono);font-size:11.5px;color:var(--muted);}
   .chart-legend span{display:flex;align-items:center;gap:5px;}
   .chart-btns{display:flex;gap:6px;}
+  #chartPanel{display:flex;flex-direction:column;}
   #chartWrap{
     position:relative;background:var(--panel);border:1px solid var(--border);border-radius:8px;
-    overflow:hidden;touch-action:none;
+    overflow:hidden;touch-action:none;height:380px;
   }
-  #priceChart{display:block;width:100%;height:380px;cursor:grab;}
+  #priceChart{display:block;width:100%;height:100%;cursor:grab;}
   #priceChart.dragging{cursor:grabbing;}
+  #priceChart.axis-drag{cursor:ns-resize;}
   .chart-hint{font-family:var(--mono);font-size:11px;color:var(--muted-2);margin-top:8px;}
   .jump-live{
-    position:absolute;top:12px;right:12px;font-family:var(--mono);font-size:11.5px;
+    position:absolute;top:12px;right:88px;font-family:var(--mono);font-size:11.5px;
     background:var(--info);color:#0C1013;border:none;border-radius:5px;padding:6px 10px;
     cursor:pointer;font-weight:600;display:none;
   }
+  #chartPanel.maximized{
+    position:fixed;inset:0;z-index:1000;background:var(--bg);padding:18px 22px;
+    display:flex;flex-direction:column;box-shadow:0 0 0 100vmax rgba(0,0,0,.6);
+  }
+  #chartPanel.maximized #chartWrap{flex:1;height:auto;}
+  #chartPanel.maximized .chart-hint{margin-top:10px;}
 </style>
 </head>
 <body>
@@ -210,26 +218,31 @@
   </section>
 
   <section id="secChart">
-    <h2><span class="n">02</span>&nbsp; Live chart — tick-by-tick, session value area</h2>
-    <div class="chart-toolbar">
-      <div class="tick-status" id="tickStatus"><span class="dot"></span><span id="tickStatusText">Connecting to tick stream…</span></div>
-      <div class="live-price" id="livePriceTag">—</div>
-      <div class="chart-btns">
-        <button id="zoomOutBtn" title="Zoom out">−</button>
-        <button id="zoomInBtn" title="Zoom in">+</button>
-        <button id="resetZoomBtn">Reset view</button>
+    <h2><span class="n">02</span>&nbsp; Live chart — tick-by-tick, session value area, option walls</h2>
+    <div id="chartPanel">
+      <div class="chart-toolbar">
+        <div class="tick-status" id="tickStatus"><span class="dot"></span><span id="tickStatusText">Connecting to tick stream…</span></div>
+        <div class="live-price" id="livePriceTag">—</div>
+        <div class="chart-btns">
+          <button id="zoomOutBtn" title="Zoom out (time)">−</button>
+          <button id="zoomInBtn" title="Zoom in (time)">+</button>
+          <button id="resetZoomBtn">Reset view</button>
+          <button id="maximizeBtn" title="Maximize chart">⤢ Maximize</button>
+        </div>
       </div>
+      <div id="chartWrap">
+        <canvas id="priceChart"></canvas>
+        <button class="jump-live" id="jumpLiveBtn">Jump to live ›</button>
+      </div>
+      <div class="chart-legend" style="margin-top:10px;">
+        <span><span class="swatch" style="background:var(--buy);"></span>VAH — session value area high</span>
+        <span><span class="swatch" style="background:var(--info);"></span>POC — session point of control</span>
+        <span><span class="swatch" style="background:var(--sell);"></span>VAL — session value area low</span>
+        <span><span class="swatch" style="background:#C77DFF;"></span>Call wall — largest call OI, nearest expiry</span>
+        <span><span class="swatch" style="background:#FF7DB0;"></span>Put wall — largest put OI, nearest expiry</span>
+      </div>
+      <div class="chart-hint">Scroll / pinch over the chart to zoom time, drag to pan. Scroll or drag vertically on the right price axis to zoom the price scale — "Reset view" restores both. Candles are the selected execution timeframe and are not force-anchored to the right edge as new ticks arrive; use "Jump to live" to snap back. Analysis panels below refresh on a fixed 1-minute cycle.</div>
     </div>
-    <div id="chartWrap">
-      <canvas id="priceChart"></canvas>
-      <button class="jump-live" id="jumpLiveBtn">Jump to live ›</button>
-    </div>
-    <div class="chart-legend" style="margin-top:10px;">
-      <span><span class="swatch" style="background:var(--buy);"></span>VAH — session value area high</span>
-      <span><span class="swatch" style="background:var(--info);"></span>POC — session point of control</span>
-      <span><span class="swatch" style="background:var(--sell);"></span>VAL — session value area low</span>
-    </div>
-    <div class="chart-hint">Scroll / pinch to zoom, drag to pan. Candles are the selected execution timeframe; the right-most candle updates live from Binance's trade stream. Analysis panels below refresh on a fixed 1-minute cycle.</div>
   </section>
 
   <section id="secData">
@@ -328,16 +341,24 @@ const LIVE = {
   lastTradePrice: null,
   prevTradePrice: null,
   candles: [],        // working candle array for the chart (cloned from exec candles, then live-updated)
-  view: { start: 0, count: 120, following: true },
+  view: { start: 0, count: 120 },
+  rightGutter: 10,    // empty candle-slots of space reserved past the last bar — keeps candles off the right edge
   dragging: false,
   dragStartX: 0,
   dragStartView: 0,
   pinchStartDist: null,
   pinchStartCount: null,
+  priceZoom: 1,           // 1 = auto-fit; <1 = zoomed in on price scale; >1 = zoomed out
+  axisDragging: false,
+  axisDragStartY: 0,
+  axisDragStartZoom: 1,
   canvas: null, ctx: null, dpr: 1,
   redrawScheduled: false,
-  sessionVP: null      // today's session POC/VAH/VAL, recomputed once per analysis cycle
+  sessionVP: null,     // today's session POC/VAH/VAL, recomputed once per analysis cycle
+  optionWalls: null    // {available, callWall, putWall, expiryLabel} recomputed once per analysis cycle
 };
+
+const OPTIONS_UNDERLYING = { BTC:'BTC', ETH:'ETH' }; // Deribit only lists options on these two of our four instruments
 
 /* =========================================================================
    FORMAT HELPERS
@@ -426,6 +447,66 @@ async function fetchTodayMinuteKlines(pair, todayStartMs){
     guard++;
   }
   return out;
+}
+
+/* ---- Options "wall" levels (Deribit public API — BTC/ETH only) ---- */
+const DERIBIT_MONTHS = {JAN:0,FEB:1,MAR:2,APR:3,MAY:4,JUN:5,JUL:6,AUG:7,SEP:8,OCT:9,NOV:10,DEC:11};
+
+function parseDeribitExpiry(code){
+  // e.g. "26SEP26" -> day 26, month SEP, year 2026
+  const m = code.match(/^(\d{1,2})([A-Z]{3})(\d{2})$/);
+  if(!m) return null;
+  const day = parseInt(m[1],10), month = DERIBIT_MONTHS[m[2]], year = 2000+parseInt(m[3],10);
+  if(month === undefined) return null;
+  return Date.UTC(year, month, day, 8, 0, 0); // Deribit options expire 08:00 UTC
+}
+
+async function fetchOptionWalls(symbol){
+  const currency = OPTIONS_UNDERLYING[symbol];
+  if(!currency) return {available:false, reason:'Deribit does not list options on this underlying'};
+  const url = `https://www.deribit.com/api/v2/public/get_book_summary_by_currency?currency=${currency}&kind=option`;
+  let json;
+  try{
+    json = await fetchJSON(url);
+  } catch(e){
+    return {available:false, reason:`Deribit fetch failed (${e.message})`};
+  }
+  const rows = (json && json.result) ? json.result : [];
+  if(!rows.length) return {available:false, reason:'Deribit returned no open contracts'};
+
+  const now = Date.now();
+  let nearestExpiry = null;
+  const parsed = [];
+  for(const r of rows){
+    const parts = r.instrument_name.split('-'); // e.g. BTC-26SEP26-70000-C
+    if(parts.length !== 4) continue;
+    const expiryMs = parseDeribitExpiry(parts[1]);
+    const strike = parseFloat(parts[2]);
+    const type = parts[3]; // 'C' or 'P'
+    const oi = parseFloat(r.open_interest) || 0;
+    if(expiryMs === null || isNaN(strike) || expiryMs <= now) continue;
+    parsed.push({expiryMs, strike, type, oi});
+    if(nearestExpiry === null || expiryMs < nearestExpiry) nearestExpiry = expiryMs;
+  }
+  if(nearestExpiry === null) return {available:false, reason:'No live (non-expired) contracts parsed from Deribit response'};
+
+  const nearTerm = parsed.filter(p => p.expiryMs === nearestExpiry);
+  const calls = nearTerm.filter(p => p.type === 'C');
+  const puts = nearTerm.filter(p => p.type === 'P');
+  if(!calls.length || !puts.length) return {available:false, reason:'Nearest expiry is missing call or put open interest data'};
+
+  const callWallRow = calls.reduce((a,b) => b.oi > a.oi ? b : a);
+  const putWallRow = puts.reduce((a,b) => b.oi > a.oi ? b : a);
+
+  return {
+    available: true,
+    callWall: callWallRow.strike,
+    callWallOI: callWallRow.oi,
+    putWall: putWallRow.strike,
+    putWallOI: putWallRow.oi,
+    expiryMs: nearestExpiry,
+    expiryLabel: new Date(nearestExpiry).toISOString().slice(0,10)
+  };
 }
 
 /* =========================================================================
@@ -583,7 +664,7 @@ async function loadAll(){
   const execInterval = STATE.execTf;
   const execLimit = execInterval === '15m' ? 1000 : 500;
 
-  let daily=null, hourly=null, exec=null, ticker=null, peerTickers=null, todayMinutes=null;
+  let daily=null, hourly=null, exec=null, ticker=null, peerTickers=null, todayMinutes=null, optionWalls=null;
 
   try{
     [daily, hourly, exec, ticker] = await Promise.all([
@@ -603,6 +684,12 @@ async function loadAll(){
     } catch(e){
       STATE.errors.push({section:'session-volume-profile', message: e.message});
     }
+  }
+
+  try{
+    optionWalls = await fetchOptionWalls(symbol);
+  } catch(e){
+    optionWalls = {available:false, reason: e.message};
   }
 
   try{
@@ -627,14 +714,15 @@ async function loadAll(){
   }
 
   STATE.peers = peerTickers;
-  STATE.data = computeBundle({symbol, pair, daily, hourly, exec, ticker, execInterval, todayMinutes});
+  STATE.data = computeBundle({symbol, pair, daily, hourly, exec, ticker, execInterval, todayMinutes, optionWalls});
   LIVE.sessionVP = STATE.data.sessionVP;
+  LIVE.optionWalls = STATE.data.optionWalls;
   setStatus('live', `Live — Binance spot, fetched ${fmtTime(STATE.lastFetch)}`);
   render();
   resetChartCandles(exec);
 }
 
-function computeBundle({symbol, pair, daily, hourly, exec, ticker, execInterval, todayMinutes}){
+function computeBundle({symbol, pair, daily, hourly, exec, ticker, execInterval, todayMinutes, optionWalls}){
   const last = daily[daily.length-1];
   const prev = daily[daily.length-2];
   const prevPrev = daily[daily.length-3];
@@ -718,7 +806,7 @@ function computeBundle({symbol, pair, daily, hourly, exec, ticker, execInterval,
     avgVol20, currentVolume24h,
     sessionsToday, overnightRange,
     pivots, emaVals, atrDailyVal, atrDailyAvg20, atrExecVal, atrExecAvg20,
-    vp5, vp10, vp20, sessionVP,
+    vp5, vp10, vp20, sessionVP, optionWalls,
     swing, fib, gaps,
     htfTrend, intradayTrend, regime,
     fetchedAt: Date.now()
@@ -951,8 +1039,12 @@ function renderChecklist(d){
     {ok:true, label:'Current price + volume vs 20-day average volume', detail:`Last ${fmtPrice(d.lastPrice)}; 24h volume ${fmtVol(d.currentVolume24h)} vs 20-day avg ${d.avgVol20?fmtVol(d.avgVol20):'—'}. Live price also streams tick-by-tick via Binance WebSocket in the chart above.`},
     {ok:!!d.sessionVP, label:"Current session volume profile (POC / VAH / VAL)", detail: d.sessionVP ? `Computed from ${d.sessionVP.minutePoints} 1-minute candles since today 00:00 UTC; plotted as lines on the live chart.` : "Today's 1m candle fetch failed this cycle."},
     {ok:!!d.overnightRange, label:'Overnight / after-hours range proxy', detail: d.overnightRange ? `Prior US close → today's Asian session range: H ${fmtPrice(d.overnightRange.high)} / L ${fmtPrice(d.overnightRange.low)}. Crypto trades 24/7 — this is a session-window proxy, not a true closed-market gap.` : 'Insufficient hourly coverage for this window.'},
-    {ok:false, label:'Scheduled catalysts (earnings / CPI / FOMC / NFP / sector news)', detail:'Not fetched automatically — no news/economic-calendar feed is wired into this build. Use the manual catalyst log in Section 06.'},
-    {ok:false, label:'Options data (put/call skew, gamma exposure, max pain)', detail:'Not integrated in this build. Note: this brief is built from Binance SPOT data, not futures/options — flagging per the zero-fabrication standard rather than guessing.'}
+    {ok:false, label:'Scheduled catalysts (earnings / CPI / FOMC / NFP / sector news)', detail:'Not fetched automatically — no news/economic-calendar feed is wired into this build. Use the manual catalyst log in Section 07.'},
+    {ok: !!(d.optionWalls && d.optionWalls.available), label:'Options data (call/put wall levels, nearest expiry open interest)', detail: d.optionWalls
+      ? (d.optionWalls.available
+          ? `Deribit public API, nearest expiry ${d.optionWalls.expiryLabel}: call wall ${fmtPrice(d.optionWalls.callWall)} (OI ${fmtVol(d.optionWalls.callWallOI)}), put wall ${fmtPrice(d.optionWalls.putWall)} (OI ${fmtVol(d.optionWalls.putWallOI)}). Raw open-interest concentration proxy — not a delta-hedging gamma-exposure (GEX) or max-pain model.`
+          : `Unavailable this cycle — ${d.optionWalls.reason}.`)
+      : 'Not checked this cycle.'}
   ];
   const ul = document.getElementById('checklist');
   ul.innerHTML = items.map(it => `
@@ -997,6 +1089,12 @@ function renderLevels(d){
     d.gaps.forEach(g => rows.push([`Unfilled gap (${fmtDate(g.date)})`, `${fmtPrice(Math.min(g.from,g.to))} – ${fmtPrice(Math.max(g.from,g.to))}`, `Daily open vs prior close, ${fmtPct(g.pct)} — not yet retraded`]));
   } else {
     rows.push(['Unfilled gaps', 'none detected', 'Daily open-vs-prior-close check over the last 60 sessions, 0.5% threshold']);
+  }
+  if(d.optionWalls && d.optionWalls.available){
+    rows.push(['Call wall', fmtPrice(d.optionWalls.callWall), `Largest call open interest (${fmtVol(d.optionWalls.callWallOI)} contracts) at Deribit's nearest expiry, ${d.optionWalls.expiryLabel} — raw OI concentration, not a GEX model`]);
+    rows.push(['Put wall', fmtPrice(d.optionWalls.putWall), `Largest put open interest (${fmtVol(d.optionWalls.putWallOI)} contracts) at Deribit's nearest expiry, ${d.optionWalls.expiryLabel} — raw OI concentration, not a GEX model`]);
+  } else {
+    rows.push(['Call wall / put wall', 'unavailable', d.optionWalls ? d.optionWalls.reason : 'Deribit lists options on BTC/ETH only']);
   }
 
   const tbody = document.querySelector('#levelsTable tbody');
@@ -1054,7 +1152,9 @@ function renderSetups(d){
 function renderRisk(d){
   const items = [];
   items.push({crit:true, text:'No economic-calendar or earnings feed is integrated — manually confirm today\'s CPI/FOMC/NFP/sector-news schedule before sizing any of the setups above, and log it in the manual catalyst box.'});
-  items.push({crit:false, text:`Options data (skew / gamma / max pain) is not available in this build — flagged rather than estimated. This is spot data only; futures basis and funding are not reflected.`});
+  items.push({crit:false, text: (d.optionWalls && d.optionWalls.available)
+    ? `Call/put wall levels are a raw open-interest concentration proxy from Deribit's nearest listed expiry (${d.optionWalls.expiryLabel}) — not a full delta-hedging gamma-exposure (GEX) or max-pain model. This is spot data overall; futures basis and funding are not reflected.`
+    : `Options data (call/put walls, skew, max pain) is unavailable this cycle${d.optionWalls && d.optionWalls.reason ? ' — '+d.optionWalls.reason : ''}. Flagged rather than estimated. This is spot data only; futures basis and funding are not reflected.`});
   const atrNote = (d.atrExecVal && d.atrExecAvg20)
     ? `${d.execInterval} ATR(14) is ${fmtPrice(d.atrExecVal)} vs its 20-period average of ${fmtPrice(d.atrExecAvg20)} (${fmtPct((d.atrExecVal-d.atrExecAvg20)/d.atrExecAvg20)}) — ${d.atrExecVal>d.atrExecAvg20*1.15?'volatility expansion, size down':'volatility in-line/contracted'}.`
     : 'ATR comparison unavailable this fetch.';
@@ -1174,7 +1274,7 @@ function resetChartCandles(execCandles){
   LIVE.candles = execCandles.map(c => ({...c}));
   LIVE.view.count = Math.min(120, LIVE.candles.length);
   LIVE.view.start = Math.max(0, LIVE.candles.length - LIVE.view.count);
-  LIVE.view.following = true;
+  LIVE.priceZoom = 1;
   document.getElementById('jumpLiveBtn').style.display = 'none';
   scheduleChartRedraw();
 }
@@ -1190,13 +1290,18 @@ function updateLiveCandle(price, qty, tradeTime){
     last.close = price;
     last.volume += qty;
   } else if(last && bucketStart > last.openTime){
+    // A new bar has formed. We deliberately do NOT shift the view to keep it
+    // pinned to the right edge — the chart is not anchored to the latest bar;
+    // the "Jump to live" control (surfaced by checkFollowing, called every
+    // draw) is how the user chooses to snap back to it.
     candles.push({openTime:bucketStart, closeTime:bucketStart+tfMs-1, open:price, high:price, low:price, close:price, volume:qty});
-    if(LIVE.view.following){
-      LIVE.view.start = Math.max(0, candles.length - LIVE.view.count);
-    }
   }
   // keep the working array bounded so it doesn't grow unbounded across a long session
-  if(candles.length > 2000) candles.splice(0, candles.length-2000);
+  if(candles.length > 2000){
+    const drop = candles.length-2000;
+    candles.splice(0, drop);
+    LIVE.view.start = Math.max(0, LIVE.view.start - drop);
+  }
 }
 
 function scheduleChartRedraw(){
@@ -1206,7 +1311,8 @@ function scheduleChartRedraw(){
 }
 
 /* =========================================================================
-   CANVAS CHART — candlesticks + session VAL/POC/VAH, with pan + zoom
+   CANVAS CHART — candlesticks + session VAL/POC/VAH + option walls,
+   with independent time pan/zoom and price-scale zoom, and a maximize mode.
    ========================================================================= */
 function initChart(){
   const canvas = document.getElementById('priceChart');
@@ -1214,35 +1320,60 @@ function initChart(){
   LIVE.ctx = canvas.getContext('2d');
 
   const resize = () => {
-    const rect = canvas.parentElement.getBoundingClientRect();
+    const rect = canvas.getBoundingClientRect();
     LIVE.dpr = window.devicePixelRatio || 1;
     canvas.width = Math.max(1, Math.floor(rect.width * LIVE.dpr));
-    canvas.height = Math.max(1, Math.floor(380 * LIVE.dpr));
-    canvas.style.width = rect.width + 'px';
-    canvas.style.height = '380px';
+    canvas.height = Math.max(1, Math.floor(rect.height * LIVE.dpr));
     drawChart();
   };
+  LIVE.resizeCanvas = resize;
   window.addEventListener('resize', resize);
   resize();
 
+  const inAxisStrip = (e) => {
+    const rect = canvas.getBoundingClientRect();
+    const x = (e.offsetX !== undefined ? e.offsetX : e.clientX - rect.left);
+    return x > rect.width - LIVE.lastPadR;
+  };
+
   canvas.addEventListener('wheel', (e) => {
     e.preventDefault();
-    zoomChart(e.deltaY < 0 ? 0.85 : 1.18, e.offsetX);
+    if(inAxisStrip(e)){
+      zoomPriceScale(e.deltaY < 0 ? 0.88 : 1.14);
+    } else {
+      zoomChart(e.deltaY < 0 ? 0.85 : 1.18, e.offsetX);
+    }
   }, {passive:false});
 
   canvas.addEventListener('mousedown', (e) => {
-    LIVE.dragging = true;
-    LIVE.dragStartX = e.clientX;
-    LIVE.dragStartView = LIVE.view.start;
-    canvas.classList.add('dragging');
+    if(inAxisStrip(e)){
+      LIVE.axisDragging = true;
+      LIVE.axisDragStartY = e.clientY;
+      LIVE.axisDragStartZoom = LIVE.priceZoom;
+      canvas.classList.add('axis-drag');
+    } else {
+      LIVE.dragging = true;
+      LIVE.dragStartX = e.clientX;
+      LIVE.dragStartView = LIVE.view.start;
+      canvas.classList.add('dragging');
+    }
+  });
+  canvas.addEventListener('dblclick', (e) => {
+    if(inAxisStrip(e)){ LIVE.priceZoom = 1; drawChart(); }
   });
   window.addEventListener('mousemove', (e) => {
-    if(!LIVE.dragging) return;
-    panChartByPixels(e.clientX - LIVE.dragStartX);
+    if(LIVE.axisDragging){
+      const dy = e.clientY - LIVE.axisDragStartY;
+      LIVE.priceZoom = clampPriceZoom(LIVE.axisDragStartZoom * Math.exp(dy*0.006));
+      drawChart();
+    } else if(LIVE.dragging){
+      panChartByPixels(e.clientX - LIVE.dragStartX);
+    }
   });
   window.addEventListener('mouseup', () => {
     LIVE.dragging = false;
-    canvas.classList.remove('dragging');
+    LIVE.axisDragging = false;
+    canvas.classList.remove('dragging','axis-drag');
   });
 
   canvas.addEventListener('touchstart', (e) => {
@@ -1277,17 +1408,28 @@ function initChart(){
   document.getElementById('resetZoomBtn').addEventListener('click', () => {
     LIVE.view.count = Math.min(120, LIVE.candles.length);
     LIVE.view.start = Math.max(0, LIVE.candles.length - LIVE.view.count);
-    LIVE.view.following = true;
-    document.getElementById('jumpLiveBtn').style.display = 'none';
+    LIVE.priceZoom = 1;
     drawChart();
   });
   document.getElementById('jumpLiveBtn').addEventListener('click', () => {
     LIVE.view.count = Math.min(LIVE.view.count, LIVE.candles.length);
     LIVE.view.start = Math.max(0, LIVE.candles.length - LIVE.view.count);
-    LIVE.view.following = true;
-    document.getElementById('jumpLiveBtn').style.display = 'none';
     drawChart();
   });
+
+  document.getElementById('maximizeBtn').addEventListener('click', toggleMaximize);
+  document.addEventListener('keydown', (e) => {
+    if(e.key === 'Escape' && document.getElementById('chartPanel').classList.contains('maximized')) toggleMaximize();
+  });
+}
+
+function toggleMaximize(){
+  const panel = document.getElementById('chartPanel');
+  const btn = document.getElementById('maximizeBtn');
+  const on = panel.classList.toggle('maximized');
+  btn.textContent = on ? '✕ Restore' : '⤢ Maximize';
+  btn.title = on ? 'Restore chart' : 'Maximize chart';
+  requestAnimationFrame(() => { if(LIVE.resizeCanvas) LIVE.resizeCanvas(); });
 }
 
 function touchDist(touches){
@@ -1302,6 +1444,13 @@ function clampViewStart(){
   const maxStart = Math.max(0, LIVE.candles.length - LIVE.view.count);
   LIVE.view.start = Math.max(0, Math.min(maxStart, LIVE.view.start));
 }
+function clampPriceZoom(z){
+  return Math.max(0.15, Math.min(6, z));
+}
+function zoomPriceScale(factor){
+  LIVE.priceZoom = clampPriceZoom(LIVE.priceZoom * factor);
+  drawChart();
+}
 function zoomChart(factor, anchorPx){
   if(!LIVE.candles.length) return;
   const rect = LIVE.canvas.getBoundingClientRect();
@@ -1311,22 +1460,19 @@ function zoomChart(factor, anchorPx){
   LIVE.view.start = Math.round(anchorIdx - anchorFrac * newCount);
   LIVE.view.count = newCount;
   clampViewStart();
-  checkFollowing();
   drawChart();
 }
 function panChartByPixels(dxPixels){
   if(!LIVE.candles.length) return;
   const rect = LIVE.canvas.getBoundingClientRect();
-  const candleWidthPx = rect.width / LIVE.view.count;
+  const candleWidthPx = rect.width / (LIVE.view.count + LIVE.rightGutter);
   const deltaCandles = Math.round(dxPixels / candleWidthPx);
   LIVE.view.start = LIVE.dragStartView - deltaCandles;
   clampViewStart();
-  checkFollowing();
   drawChart();
 }
 function checkFollowing(){
-  const atEnd = LIVE.view.start + LIVE.view.count >= LIVE.candles.length - 1;
-  LIVE.view.following = atEnd;
+  const atEnd = LIVE.candles.length > 0 && (LIVE.view.start + LIVE.view.count >= LIVE.candles.length);
   document.getElementById('jumpLiveBtn').style.display = atEnd ? 'none' : 'block';
 }
 
@@ -1341,6 +1487,8 @@ function drawChart(){
   ctx.clearRect(0,0,cw,ch);
 
   const AXIS_COLOR = '#39FF14'; // bright green — all price-axis text uses this
+  const padL = 8, padR = 80, padT = 14, padB = 22;
+  LIVE.lastPadR = padR; // used by mouse/wheel handlers to detect axis-strip interaction
 
   const candles = LIVE.candles;
   if(!candles.length){
@@ -1352,22 +1500,30 @@ function drawChart(){
   }
 
   clampViewStart();
+  checkFollowing();
   const start = LIVE.view.start, count = LIVE.view.count;
   const visible = candles.slice(start, start+count);
   if(!visible.length){ ctx.restore(); return; }
 
-  const padL = 8, padR = 80, padT = 14, padB = 22;
   const plotW = cw - padL - padR, plotH = ch - padT - padB;
 
   let lo = Math.min(...visible.map(c=>c.low));
   let hi = Math.max(...visible.map(c=>c.high));
   const vp = LIVE.sessionVP;
   if(vp){ lo = Math.min(lo, vp.val); hi = Math.max(hi, vp.vah); }
+  const walls = LIVE.optionWalls;
+  if(walls && walls.available){ lo = Math.min(lo, walls.putWall); hi = Math.max(hi, walls.callWall); }
   const range = (hi - lo) || (hi*0.01) || 1;
   lo -= range*0.06; hi += range*0.06;
 
+  // independent price-scale zoom, applied around the auto-fit center
+  const center = (lo+hi)/2;
+  const half = (hi-lo)/2 * LIVE.priceZoom;
+  lo = center - half; hi = center + half;
+
   const yFor = (price) => padT + plotH * (1 - (price - lo)/(hi-lo));
-  const slot = plotW / count;
+  // reserve LIVE.rightGutter empty candle-slots of space so bars are never flush against the right edge
+  const slot = plotW / (count + LIVE.rightGutter);
   const xFor = (i) => padL + i*slot + slot/2;
 
   // grid + price axis (bright green axis text)
@@ -1407,34 +1563,40 @@ function drawChart(){
     ctx.fillRect(x-bodyW/2, top, bodyW, h);
   }
 
-  // live marker on the last (forming) candle
+  // live marker on the last (forming) candle, if it's in the visible window
   const lastGlobalIdx = candles.length-1;
   const lastCandle = candles[lastGlobalIdx];
-  const showingLastCandle = (start+visible.length-1 === lastGlobalIdx);
+  const showingLastCandle = (start <= lastGlobalIdx && lastGlobalIdx < start+visible.length);
   if(showingLastCandle){
-    const x = xFor(visible.length-1);
+    const x = xFor(lastGlobalIdx - start);
     ctx.fillStyle = lastCandle.close >= lastCandle.open ? '#37B889' : '#E2584A';
     ctx.beginPath(); ctx.arc(x, yFor(lastCandle.close), 3, 0, Math.PI*2); ctx.fill();
   }
 
-  // VAL / POC / VAH lines, each with its price value printed on the axis
+  // reference level lines: session VAL/POC/VAH + option call/put walls.
+  // Each shows its price value both beside its name label on the left AND on the price axis (right).
+  const levelLines = [];
   if(vp){
-    const lines = [
-      {price: vp.vah, color: '#37B889', label: 'VAH'},
-      {price: vp.poc, color: '#5B8DBE', label: 'POC'},
-      {price: vp.val, color: '#E2584A', label: 'VAL'}
-    ];
+    levelLines.push({price: vp.vah, color: '#37B889', label: 'VAH'});
+    levelLines.push({price: vp.poc, color: '#5B8DBE', label: 'POC'});
+    levelLines.push({price: vp.val, color: '#E2584A', label: 'VAL'});
+  }
+  if(walls && walls.available){
+    levelLines.push({price: walls.callWall, color: '#C77DFF', label: 'Call wall'});
+    levelLines.push({price: walls.putWall, color: '#FF7DB0', label: 'Put wall'});
+  }
+  if(levelLines.length){
     ctx.setLineDash([5,4]);
     ctx.lineWidth = 1.3;
-    lines.forEach(l => {
+    levelLines.forEach(l => {
       const y = yFor(l.price);
       if(y < padT-10 || y > ch-padB+10) return;
       ctx.strokeStyle = l.color;
       ctx.beginPath(); ctx.moveTo(padL, y); ctx.lineTo(cw-padR, y); ctx.stroke();
       ctx.font = '10.5px IBM Plex Mono, monospace';
       ctx.fillStyle = l.color;
-      ctx.fillText(l.label, padL+4, y-3);
-      // price value on the axis, in bright green like the rest of the axis
+      ctx.fillText(`${l.label} ${fmtPrice(l.price)}`, padL+4, y-3);
+      // price value repeated on the price axis, in the shared bright-green axis color
       ctx.fillStyle = AXIS_COLOR;
       ctx.fillText(fmtPrice(l.price), cw-padR+8, y+4);
     });
@@ -1482,7 +1644,7 @@ function drawChart(){
   if(visible.length){
     ctx.fillText(timeLabel(visible[0]), padL, ch-6);
     ctx.fillText(timeLabel(visible[Math.floor(visible.length/2)]), padL+plotW/2-40, ch-6);
-    ctx.fillText(timeLabel(visible[visible.length-1]), cw-padR-90, ch-6);
+    ctx.fillText(timeLabel(visible[visible.length-1]), padL+(visible.length-1)*slot+slot/2-45, ch-6);
   }
 
   ctx.restore();
