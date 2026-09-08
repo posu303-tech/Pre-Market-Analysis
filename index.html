@@ -1340,6 +1340,8 @@ function drawChart(){
   const cw = W/dpr, ch = H/dpr;
   ctx.clearRect(0,0,cw,ch);
 
+  const AXIS_COLOR = '#39FF14'; // bright green — all price-axis text uses this
+
   const candles = LIVE.candles;
   if(!candles.length){
     ctx.fillStyle = '#576068';
@@ -1354,7 +1356,7 @@ function drawChart(){
   const visible = candles.slice(start, start+count);
   if(!visible.length){ ctx.restore(); return; }
 
-  const padL = 8, padR = 64, padT = 14, padB = 22;
+  const padL = 8, padR = 80, padT = 14, padB = 22;
   const plotW = cw - padL - padR, plotH = ch - padT - padB;
 
   let lo = Math.min(...visible.map(c=>c.low));
@@ -1368,7 +1370,7 @@ function drawChart(){
   const slot = plotW / count;
   const xFor = (i) => padL + i*slot + slot/2;
 
-  // grid + price axis
+  // grid + price axis (bright green axis text)
   ctx.strokeStyle = '#1B2229';
   ctx.lineWidth = 1;
   ctx.font = '11px IBM Plex Mono, monospace';
@@ -1377,7 +1379,7 @@ function drawChart(){
     const price = lo + (hi-lo)*g/gridLines;
     const y = yFor(price);
     ctx.beginPath(); ctx.moveTo(padL, y); ctx.lineTo(cw-padR, y); ctx.stroke();
-    ctx.fillStyle = '#7C8894';
+    ctx.fillStyle = AXIS_COLOR;
     ctx.fillText(fmtPrice(price), cw-padR+8, y+4);
   }
 
@@ -1407,14 +1409,15 @@ function drawChart(){
 
   // live marker on the last (forming) candle
   const lastGlobalIdx = candles.length-1;
-  if(start+visible.length-1 === lastGlobalIdx){
-    const lastC = visible[visible.length-1];
+  const lastCandle = candles[lastGlobalIdx];
+  const showingLastCandle = (start+visible.length-1 === lastGlobalIdx);
+  if(showingLastCandle){
     const x = xFor(visible.length-1);
-    ctx.fillStyle = lastC.close >= lastC.open ? '#37B889' : '#E2584A';
-    ctx.beginPath(); ctx.arc(x, yFor(lastC.close), 3, 0, Math.PI*2); ctx.fill();
+    ctx.fillStyle = lastCandle.close >= lastCandle.open ? '#37B889' : '#E2584A';
+    ctx.beginPath(); ctx.arc(x, yFor(lastCandle.close), 3, 0, Math.PI*2); ctx.fill();
   }
 
-  // VAL / POC / VAH lines
+  // VAL / POC / VAH lines, each with its price value printed on the axis
   if(vp){
     const lines = [
       {price: vp.vah, color: '#37B889', label: 'VAH'},
@@ -1423,16 +1426,50 @@ function drawChart(){
     ];
     ctx.setLineDash([5,4]);
     ctx.lineWidth = 1.3;
-    ctx.font = '10.5px IBM Plex Mono, monospace';
     lines.forEach(l => {
       const y = yFor(l.price);
       if(y < padT-10 || y > ch-padB+10) return;
       ctx.strokeStyle = l.color;
       ctx.beginPath(); ctx.moveTo(padL, y); ctx.lineTo(cw-padR, y); ctx.stroke();
+      ctx.font = '10.5px IBM Plex Mono, monospace';
       ctx.fillStyle = l.color;
       ctx.fillText(l.label, padL+4, y-3);
+      // price value on the axis, in bright green like the rest of the axis
+      ctx.fillStyle = AXIS_COLOR;
+      ctx.fillText(fmtPrice(l.price), cw-padR+8, y+4);
     });
     ctx.setLineDash([]);
+  }
+
+  // current live price line + tag on the axis, and countdown to this bar's close
+  if(showingLastCandle){
+    const livePrice = LIVE.lastTradePrice !== null ? LIVE.lastTradePrice : lastCandle.close;
+    const y = Math.max(padT+6, Math.min(ch-padB-6, yFor(livePrice)));
+    ctx.setLineDash([2,3]);
+    ctx.strokeStyle = AXIS_COLOR;
+    ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(padL, y); ctx.lineTo(cw-padR, y); ctx.stroke();
+    ctx.setLineDash([]);
+
+    const tagW = 68, tagH = 16;
+    ctx.fillStyle = '#0C1013';
+    ctx.strokeStyle = AXIS_COLOR;
+    ctx.lineWidth = 1;
+    ctx.fillRect(cw-padR, y-tagH/2, tagW, tagH);
+    ctx.strokeRect(cw-padR, y-tagH/2, tagW, tagH);
+    ctx.fillStyle = AXIS_COLOR;
+    ctx.font = '11px IBM Plex Mono, monospace';
+    ctx.fillText(fmtPrice(livePrice), cw-padR+6, y+4);
+
+    // countdown to this (forming) bar's close, shown on the price axis just above the live price tag
+    const remainingMs = Math.max(0, lastCandle.closeTime - Date.now());
+    const totalSec = Math.floor(remainingMs/1000);
+    const mm = Math.floor(totalSec/60), ss = totalSec%60;
+    const countdownText = `⏱ ${mm}:${String(ss).padStart(2,'0')}`;
+    const cdY = (y - tagH/2 - 8 < padT+10) ? y+tagH/2+16 : y-tagH/2-6;
+    ctx.font = '10.5px IBM Plex Mono, monospace';
+    ctx.fillStyle = AXIS_COLOR;
+    ctx.fillText(countdownText, cw-padR+2, cdY);
   }
 
   // time axis (first / middle / last visible)
@@ -1494,6 +1531,7 @@ initChart();
 connectTickStream();
 loadAll();
 setAutoRefresh(document.getElementById('autoRefresh').checked); // full analysis re-runs every 60s by default
+setInterval(scheduleChartRedraw, 1000); // keeps the bar-close countdown ticking even between trades
 </script>
 </body>
 </html>
