@@ -240,8 +240,9 @@
         <span><span class="swatch" style="background:var(--sell);"></span>VAL — session value area low</span>
         <span><span class="swatch" style="background:#C77DFF;"></span>Call wall — largest call OI, nearest expiry</span>
         <span><span class="swatch" style="background:#FF7DB0;"></span>Put wall — largest put OI, nearest expiry</span>
+        <span><span class="swatch" style="background:#7C8894;"></span>Session breaks — Asian/London/US/Late UTC boundaries</span>
       </div>
-      <div class="chart-hint">Scroll / pinch over the chart to zoom time, drag to pan. Scroll or drag vertically on the right price axis to zoom the price scale — "Reset view" restores both. Candles are the selected execution timeframe and are not force-anchored to the right edge as new ticks arrive; use "Jump to live" to snap back. Analysis panels below refresh on a fixed 1-minute cycle.</div>
+      <div class="chart-hint">Scroll / pinch over the chart to zoom time, drag to pan. Scroll or drag vertically on the right price axis to zoom the price scale — "Reset view" restores both. Candles are the selected execution timeframe and are not force-anchored to the right edge as new ticks arrive; use "Jump to live" to snap back. A countdown to the current bar's close sits on the price axis, and a countdown to the next session break (Asian/London/US/Late) sits top-right of the chart. Analysis panels below refresh on a fixed 1-minute cycle.</div>
     </div>
   </section>
 
@@ -321,6 +322,31 @@ const DISPLAY_NAME = { BTC:'BTC-USD', ETH:'ETH-USD', SOL:'SOL-USD', XAUT:'XAUT-U
 const API = 'https://api.binance.com/api/v3';
 const WS_BASE = 'wss://stream.binance.com:9443/ws';
 const TF_MS = { '15m': 15*60*1000, '1h': 60*60*1000, '4h': 4*60*60*1000 };
+const SESSION_BOUNDARIES = [ {hour:0, label:'Asian'}, {hour:8, label:'London'}, {hour:13, label:'US'}, {hour:21, label:'Late'} ];
+
+// Returns the next UTC session-boundary crossing at or after `nowMs`, e.g. {time, label:'London'}
+function nextSessionBreak(nowMs){
+  const d = new Date(nowMs);
+  const dayStart = Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate());
+  const candidates = SESSION_BOUNDARIES.map(b => ({time: dayStart + b.hour*3600000, label: b.label}));
+  candidates.push({time: dayStart + 86400000, label:'Asian'}); // tomorrow's Asian open
+  for(const c of candidates) if(c.time > nowMs) return c;
+  return candidates[candidates.length-1];
+}
+
+// All UTC session-boundary timestamps that fall within [fromMs, toMs], inclusive, spanning multiple days if needed
+function sessionBreaksInRange(fromMs, toMs){
+  const out = [];
+  const startDay = Math.floor(fromMs/86400000)*86400000;
+  const endDay = Math.ceil(toMs/86400000)*86400000;
+  for(let day=startDay; day<=endDay; day+=86400000){
+    for(const b of SESSION_BOUNDARIES){
+      const t = day + b.hour*3600000;
+      if(t >= fromMs && t <= toMs) out.push({time:t, label:b.label});
+    }
+  }
+  return out;
+}
 const ANALYSIS_INTERVAL_MS = 60*1000; // full analysis re-run cadence, per desk requirement
 
 const STATE = {
@@ -823,25 +849,43 @@ function volumeProfileForDays(closedDaily, hourly, n){
   return vp ? {...vp, n, hourlyPoints: window.length} : null;
 }
 
+// Shared UTC session windows (Asian/London/US/Late) — used for session-range stats
+// below and for the "session break" countdown drawn on the chart.
+const SESSION_WINDOWS = [
+  {key:'asian', name:'Asian', startH:0, endH:8},
+  {key:'london', name:'London', startH:8, endH:13},
+  {key:'us', name:'US', startH:13, endH:21},
+  {key:'late', name:'Late', startH:21, endH:24}
+];
+
 function computeSessionRanges(todayHourly){
-  const buckets = { asian: [0,8], london: [8,13], us: [13,21], late: [21,24] };
   const out = {};
-  for(const [name, [startH, endH]] of Object.entries(buckets)){
+  for(const w of SESSION_WINDOWS){
     const inBucket = todayHourly.filter(c => {
       const h = new Date(c.openTime).getUTCHours();
-      return h >= startH && h < endH;
+      return h >= w.startH && h < w.endH;
     });
     if(inBucket.length){
-      out[name] = {
+      out[w.key] = {
         high: Math.max(...inBucket.map(c=>c.high)),
         low: Math.min(...inBucket.map(c=>c.low)),
         volume: inBucket.reduce((a,c)=>a+c.volume,0)
       };
     } else {
-      out[name] = null;
+      out[w.key] = null;
     }
   }
   return out;
+}
+
+// Current UTC session + time remaining until it breaks into the next one.
+function currentSessionCountdown(nowMs){
+  const d = new Date(nowMs);
+  const hourFrac = d.getUTCHours() + d.getUTCMinutes()/60 + d.getUTCSeconds()/3600;
+  const todayMidnight = Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate());
+  const win = SESSION_WINDOWS.find(w => hourFrac >= w.startH && hourFrac < w.endH) || SESSION_WINDOWS[SESSION_WINDOWS.length-1];
+  const breaksAt = todayMidnight + win.endH*3600000; // endH=24 lands exactly on next day's 00:00 UTC
+  return {name: win.name, breaksAt, remainingMs: Math.max(0, breaksAt - nowMs)};
 }
 
 function computeOvernightRange(priorDayHourly, todayHourly){
@@ -1525,6 +1569,7 @@ function drawChart(){
   // reserve LIVE.rightGutter empty candle-slots of space so bars are never flush against the right edge
   const slot = plotW / (count + LIVE.rightGutter);
   const xFor = (i) => padL + i*slot + slot/2;
+  const tfMsForChart = TF_MS[STATE.execTf] || TF_MS['1h'];
 
   // grid + price axis (bright green axis text)
   ctx.strokeStyle = '#1B2229';
@@ -1539,11 +1584,31 @@ function drawChart(){
     ctx.fillText(fmtPrice(price), cw-padR+8, y+4);
   }
 
-  // session value area shading
+  // session shading
   if(vp){
     ctx.fillStyle = 'rgba(91,141,190,0.06)';
     const yVAH = yFor(vp.vah), yVAL = yFor(vp.val);
     ctx.fillRect(padL, yVAH, plotW, yVAL-yVAH);
+  }
+
+  // session-break vertical lines (Asian/London/US/Late UTC boundaries) across the visible window
+  {
+    const rangeStart = visible[0].openTime;
+    const rangeEnd = visible[visible.length-1].closeTime;
+    const xForTime = (t) => padL + ((t - rangeStart)/tfMsForChart)*slot;
+    const breaks = sessionBreaksInRange(rangeStart, rangeEnd);
+    ctx.setLineDash([2,4]);
+    ctx.strokeStyle = 'rgba(124,136,148,0.35)';
+    ctx.lineWidth = 1;
+    ctx.font = '10px IBM Plex Mono, monospace';
+    ctx.fillStyle = '#7C8894';
+    breaks.forEach(b => {
+      const x = xForTime(b.time);
+      if(x < padL || x > cw-padR) return;
+      ctx.beginPath(); ctx.moveTo(x, padT); ctx.lineTo(x, ch-padB); ctx.stroke();
+      ctx.fillText(b.label, x+3, padT+10);
+    });
+    ctx.setLineDash([]);
   }
 
   // candles
@@ -1632,6 +1697,26 @@ function drawChart(){
     ctx.font = '10.5px IBM Plex Mono, monospace';
     ctx.fillStyle = AXIS_COLOR;
     ctx.fillText(countdownText, cw-padR+2, cdY);
+  }
+
+  // countdown to the next session break (Asian/London/US/Late UTC boundary), top-right of the plot area
+  {
+    const next = nextSessionBreak(Date.now());
+    const remain = Math.max(0, next.time - Date.now());
+    const hh = Math.floor(remain/3600000);
+    const mm = Math.floor((remain%3600000)/60000);
+    const ss = Math.floor((remain%60000)/1000);
+    const label = `Next: ${next.label} in ${hh}:${String(mm).padStart(2,'0')}:${String(ss).padStart(2,'0')}`;
+    ctx.font = '10.5px IBM Plex Mono, monospace';
+    const textW = ctx.measureText(label).width;
+    const boxX = cw - padR - textW - 16, boxY = padT + 4;
+    ctx.fillStyle = 'rgba(12,16,19,0.85)';
+    ctx.fillRect(boxX, boxY, textW+10, 16);
+    ctx.strokeStyle = 'rgba(124,136,148,0.5)';
+    ctx.lineWidth = 1;
+    ctx.strokeRect(boxX, boxY, textW+10, 16);
+    ctx.fillStyle = '#7C8894';
+    ctx.fillText(label, boxX+5, boxY+11);
   }
 
   // time axis (first / middle / last visible)
