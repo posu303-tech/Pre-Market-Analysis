@@ -1,0 +1,1925 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Pre-Market Desk Brief — BTC / ETH / SOL / XAUT / XRP / DOGE</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#0C1013;
+    --panel:#12171C;
+    --panel-2:#161C22;
+    --border:#232A31;
+    --text:#DCE3E8;
+    --muted:#7C8894;
+    --muted-2:#576068;
+    --buy:#37B889;
+    --sell:#E2584A;
+    --warn:#D6A44A;
+    --info:#5B8DBE;
+    --mono:'IBM Plex Mono', ui-monospace, SFMono-Regular, monospace;
+    --sans:'IBM Plex Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:var(--bg);
+    color:var(--text);
+    font-family:var(--sans);
+    line-height:1.5;
+    -webkit-font-smoothing:antialiased;
+  }
+  ::selection{background:var(--info);color:#fff;}
+  a{color:var(--info);}
+  .wrap{max-width:1080px;margin:0 auto;padding:28px 20px 80px;}
+
+  /* ---- top bar ---- */
+  .topbar{
+    display:flex;flex-wrap:wrap;gap:14px;align-items:center;justify-content:space-between;
+    padding-bottom:18px;border-bottom:1px solid var(--border);margin-bottom:22px;
+  }
+  .brand{display:flex;flex-direction:column;gap:2px;}
+  .brand .kicker{font-family:var(--mono);font-size:12px;color:var(--muted);letter-spacing:.02em;}
+  .brand h1{font-size:19px;margin:0;font-weight:600;letter-spacing:-.01em;}
+  .controls{display:flex;gap:8px;align-items:center;flex-wrap:wrap;}
+  select, button{
+    font-family:var(--mono);font-size:13px;
+    background:var(--panel-2);color:var(--text);
+    border:1px solid var(--border);border-radius:6px;
+    padding:8px 10px;cursor:pointer;
+  }
+  select:focus, button:focus, input:focus{outline:2px solid var(--info);outline-offset:1px;}
+  button{transition:border-color .15s;}
+  button:hover{border-color:var(--muted);}
+  button.primary{background:var(--info);border-color:var(--info);color:#0C1013;font-weight:600;}
+  button.primary:hover{filter:brightness(1.08);}
+  .tf-group{display:flex;border:1px solid var(--border);border-radius:6px;overflow:hidden;}
+  .tf-group button{border:none;border-radius:0;background:var(--panel-2);}
+  .tf-group button.active{background:var(--info);color:#0C1013;font-weight:600;}
+  .tf-group button + button{border-left:1px solid var(--border);}
+
+  /* ---- status banner ---- */
+  .status{
+    font-family:var(--mono);font-size:12.5px;color:var(--muted);
+    display:flex;flex-wrap:wrap;gap:4px 16px;align-items:center;margin-bottom:22px;
+  }
+  .status .dot{width:7px;height:7px;border-radius:50%;background:var(--muted-2);display:inline-block;margin-right:6px;}
+  .status.live .dot{background:var(--buy);box-shadow:0 0 0 3px rgba(55,184,137,.15);}
+  .status.error .dot{background:var(--sell);}
+  .error-banner{
+    background:rgba(226,88,74,.08);border:1px solid rgba(226,88,74,.35);color:#F0A79C;
+    border-radius:8px;padding:12px 14px;font-family:var(--mono);font-size:12.5px;margin-bottom:22px;display:none;
+  }
+
+  section{margin-bottom:34px;}
+  h2{
+    font-size:13px;text-transform:none;letter-spacing:.01em;color:var(--muted);
+    font-weight:600;margin:0 0 12px;padding-bottom:8px;border-bottom:1px solid var(--border);
+  }
+  h2 .n{color:var(--muted-2);font-family:var(--mono);}
+  p{margin:0 0 10px;font-size:14.5px;}
+  .lede{
+    font-size:16px;line-height:1.65;padding:16px 18px;background:var(--panel);
+    border:1px solid var(--border);border-radius:8px;border-left:3px solid var(--info);
+  }
+  .lede.bias-bull{border-left-color:var(--buy);}
+  .lede.bias-bear{border-left-color:var(--sell);}
+  .lede.bias-neutral{border-left-color:var(--warn);}
+  .tag{
+    display:inline-block;font-family:var(--mono);font-size:11px;padding:2px 7px;border-radius:4px;
+    border:1px solid var(--border);color:var(--muted);margin-right:6px;vertical-align:middle;
+  }
+  .tag.bull{color:var(--buy);border-color:rgba(55,184,137,.4);}
+  .tag.bear{color:var(--sell);border-color:rgba(226,88,74,.4);}
+  .tag.warn{color:var(--warn);border-color:rgba(214,164,74,.4);}
+
+  table{width:100%;border-collapse:collapse;font-size:13.5px;}
+  .table-scroll{overflow-x:auto;-webkit-overflow-scrolling:touch;}
+  .table-scroll table{min-width:560px;}
+  th{
+    text-align:left;font-family:var(--mono);font-weight:500;font-size:11.5px;color:var(--muted);
+    padding:8px 10px;border-bottom:1px solid var(--border);white-space:nowrap;
+  }
+  td{padding:9px 10px;border-bottom:1px solid var(--border);vertical-align:top;}
+  tbody tr:last-child td{border-bottom:none;}
+  tbody tr:hover{background:rgba(255,255,255,.015);}
+  .num{font-family:var(--mono);font-variant-numeric:tabular-nums;white-space:nowrap;}
+  .muted{color:var(--muted);}
+  .small{font-size:12px;}
+  .method{color:var(--muted);font-size:12px;font-family:var(--mono);}
+  .up{color:var(--buy);}
+  .down{color:var(--sell);}
+  .flag{color:var(--warn);}
+
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:20px;}
+  @media (max-width:720px){.grid2{grid-template-columns:1fr;}}
+
+  .checklist{list-style:none;margin:0;padding:0;display:grid;gap:8px;}
+  .checklist li{
+    display:flex;gap:10px;align-items:flex-start;font-size:13px;padding:10px 12px;
+    background:var(--panel);border:1px solid var(--border);border-radius:6px;
+  }
+  .checklist .mark{font-family:var(--mono);font-size:13px;width:16px;flex:none;}
+  .checklist .mark.ok{color:var(--buy);}
+  .checklist .mark.no{color:var(--warn);}
+  .checklist .label{color:var(--text);font-weight:500;}
+  .checklist .detail{color:var(--muted);display:block;font-size:12px;margin-top:2px;}
+
+  .riskbox ul{margin:0;padding-left:0;list-style:none;display:grid;gap:10px;}
+  .riskbox li{
+    padding:10px 12px;background:var(--panel);border:1px solid var(--border);border-radius:6px;
+    font-size:13.5px;border-left:3px solid var(--warn);
+  }
+  .riskbox li.crit{border-left-color:var(--sell);}
+
+  .catalyst-input{
+    width:100%;min-height:56px;background:var(--panel-2);border:1px solid var(--border);
+    color:var(--text);font-family:var(--sans);font-size:13px;border-radius:6px;padding:10px;resize:vertical;
+  }
+  .foot{margin-top:8px;color:var(--muted-2);font-size:11.5px;font-family:var(--mono);}
+
+  footer{
+    border-top:1px solid var(--border);margin-top:44px;padding-top:16px;
+    font-size:12px;color:var(--muted-2);font-family:var(--mono);line-height:1.7;
+  }
+  .disclaimer{color:var(--warn);}
+  .card-actions{display:flex;gap:8px;margin-top:14px;}
+
+  .swatch{display:inline-block;width:9px;height:9px;border-radius:2px;margin-right:6px;vertical-align:middle;}
+
+  /* ---- live chart ---- */
+  .chart-toolbar{display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between;margin-bottom:10px;}
+  .tick-status{font-family:var(--mono);font-size:12px;color:var(--muted);display:flex;align-items:center;gap:6px;}
+  .tick-status .dot{width:7px;height:7px;border-radius:50%;background:var(--muted-2);display:inline-block;}
+  .tick-status.live .dot{background:var(--buy);box-shadow:0 0 0 3px rgba(55,184,137,.15);}
+  .tick-status.error .dot{background:var(--sell);}
+  .live-price{font-family:var(--mono);font-size:20px;font-weight:600;transition:color .15s;}
+  .chart-legend{display:flex;flex-wrap:wrap;gap:14px;font-family:var(--mono);font-size:11.5px;color:var(--muted);}
+  .chart-legend span{display:flex;align-items:center;gap:5px;}
+  .chart-btns{display:flex;gap:6px;}
+  #chartPanel{display:flex;flex-direction:column;}
+  #chartWrap{
+    position:relative;background:var(--panel);border:1px solid var(--border);border-radius:8px;
+    overflow:hidden;touch-action:none;height:380px;
+  }
+  #priceChart{display:block;width:100%;height:100%;cursor:grab;}
+  #priceChart.dragging{cursor:grabbing;}
+  #priceChart.axis-drag{cursor:ns-resize;}
+  .chart-hint{font-family:var(--mono);font-size:11px;color:var(--muted-2);margin-top:8px;}
+  .jump-live{
+    position:absolute;top:12px;right:88px;font-family:var(--mono);font-size:11.5px;
+    background:var(--info);color:#0C1013;border:none;border-radius:5px;padding:6px 10px;
+    cursor:pointer;font-weight:600;display:none;
+  }
+  #chartPanel.maximized{
+    position:fixed;inset:0;z-index:1000;background:var(--bg);padding:18px 22px;
+    display:flex;flex-direction:column;box-shadow:0 0 0 100vmax rgba(0,0,0,.6);
+  }
+  #chartPanel.maximized #chartWrap{flex:1;height:auto;}
+  #chartPanel.maximized .chart-hint{margin-top:10px;}
+
+  /* ---- mobile / small-viewport optimization ---- */
+  @media (max-width:680px){
+    .wrap{padding:16px 12px 60px;}
+    .topbar{flex-direction:column;align-items:stretch;gap:12px;padding-bottom:14px;}
+    .brand h1{font-size:16px;}
+    .controls{width:100%;justify-content:space-between;flex-wrap:wrap;gap:8px;}
+    #symbolSelect{flex:1 1 auto;min-width:110px;}
+    select, button{font-size:12.5px;padding:10px 9px;min-height:38px;}
+    .tf-group{flex:1 1 auto;}
+    .tf-group button{flex:1;}
+    label.small{font-size:11px;}
+    .status{font-size:11px;gap:2px 10px;}
+    h2{font-size:12px;}
+    .lede{font-size:14px;padding:13px 14px;}
+    section{margin-bottom:26px;}
+    table{font-size:12px;}
+    th, td{padding:7px 6px;}
+    .chart-toolbar{flex-direction:column;align-items:stretch;gap:8px;}
+    .chart-btns{justify-content:space-between;}
+    .chart-btns button{flex:1;min-height:38px;}
+    .live-price{font-size:17px;text-align:center;}
+    #chartWrap{height:300px;}
+    #chartPanel.maximized #chartWrap{height:auto;}
+    .chart-legend{gap:8px 12px;font-size:10.5px;}
+    .chart-hint{font-size:10px;}
+    .jump-live{top:8px;right:8px;padding:5px 8px;font-size:10.5px;}
+    .checklist li{padding:9px 10px;font-size:12.5px;}
+    .riskbox li{font-size:12.5px;padding:9px 10px;}
+    .catalyst-input{font-size:12.5px;}
+    footer{font-size:11px;}
+  }
+  @media (max-width:400px){
+    #chartWrap{height:260px;}
+    .brand .kicker{font-size:10.5px;}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="topbar">
+    <div class="brand">
+      <span class="kicker">Pre-Market Technical Brief</span>
+      <h1 id="brandTitle">— loading —</h1>
+    </div>
+    <div class="controls">
+      <select id="symbolSelect" aria-label="Instrument">
+        <option value="BTC">BTC-USD</option>
+        <option value="ETH">ETH-USD</option>
+        <option value="SOL">SOL-USD</option>
+        <option value="XAUT">XAUT-USD</option>
+        <option value="XRP">XRP-USD</option>
+        <option value="DOGE">DOGE-USD</option>
+      </select>
+      <div class="tf-group" role="group" aria-label="Execution timeframe">
+        <button data-tf="15m">15m</button>
+        <button data-tf="1h" class="active">1h</button>
+        <button data-tf="4h">4h</button>
+      </div>
+      <button id="refreshBtn" class="primary">Refresh</button>
+      <label class="small muted" style="display:flex;align-items:center;gap:5px;font-family:var(--mono);">
+        <input type="checkbox" id="autoRefresh" checked> analysis every 1m
+      </label>
+    </div>
+  </div>
+
+  <div id="status" class="status">
+    <span class="dot"></span><span id="statusText">Initializing…</span>
+  </div>
+  <div id="errorBanner" class="error-banner"></div>
+
+  <section id="secSummary">
+    <h2><span class="n">01</span>&nbsp; Summary bias</h2>
+    <div id="lede" class="lede">Fetching live data…</div>
+  </section>
+
+  <section id="secChart">
+    <h2><span class="n">02</span>&nbsp; Live chart — tick-by-tick, session value area, option walls</h2>
+    <div id="chartPanel">
+      <div class="chart-toolbar">
+        <div class="tick-status" id="tickStatus"><span class="dot"></span><span id="tickStatusText">Connecting to tick stream…</span></div>
+        <div class="live-price" id="livePriceTag">—</div>
+        <div class="chart-btns">
+          <button id="zoomOutBtn" title="Zoom out (time)">−</button>
+          <button id="zoomInBtn" title="Zoom in (time)">+</button>
+          <button id="resetZoomBtn">Reset view</button>
+          <button id="maximizeBtn" title="Maximize chart">⤢ Maximize</button>
+        </div>
+      </div>
+      <div id="chartWrap">
+        <canvas id="priceChart"></canvas>
+        <button class="jump-live" id="jumpLiveBtn">Jump to live ›</button>
+      </div>
+      <div class="chart-legend" style="margin-top:10px;">
+        <span><span class="swatch" style="background:var(--buy);"></span>VAH — session value area high</span>
+        <span><span class="swatch" style="background:var(--info);"></span>POC — session point of control</span>
+        <span><span class="swatch" style="background:var(--sell);"></span>VAL — session value area low</span>
+        <span><span class="swatch" style="background:#C77DFF;"></span>Call wall — largest call OI, nearest expiry</span>
+        <span><span class="swatch" style="background:#FF7DB0;"></span>Put wall — largest put OI, nearest expiry</span>
+        <span><span class="swatch" style="background:#7C8894;"></span>Session breaks — Asian/London/US/Late UTC boundaries</span>
+      </div>
+      <div class="chart-hint">Move the mouse (or touch-drag) over the chart for a crosshair with live price/time readouts on the axes. Scroll / pinch over the chart to zoom time, drag to pan. Scroll or drag vertically on the right price axis to zoom the price scale — "Reset view" restores both. Candles are the selected execution timeframe and are not force-anchored to the right edge as new ticks arrive; use "Jump to live" to snap back. A countdown to the current bar's close sits on the price axis, and a countdown to the next session break (Asian/London/US/Late) sits top-right of the chart. Analysis panels below refresh on a fixed 1-minute cycle.</div>
+    </div>
+  </section>
+
+  <section id="secData">
+    <h2><span class="n">03</span>&nbsp; Data requirements — confirmation checklist</h2>
+    <ul class="checklist" id="checklist"></ul>
+  </section>
+
+  <section id="secLevels">
+    <h2><span class="n">04</span>&nbsp; Key levels</h2>
+    <div class="table-scroll">
+    <table id="levelsTable">
+      <thead><tr><th>Level</th><th>Price</th><th>Method / inputs</th></tr></thead>
+      <tbody></tbody>
+    </table>
+    </div>
+  </section>
+
+  <section id="secStructure">
+    <h2><span class="n">05</span>&nbsp; Market structure &amp; bias</h2>
+    <div class="grid2">
+      <div>
+        <p id="structureText"></p>
+      </div>
+      <div>
+        <div class="table-scroll">
+        <table id="rsTable">
+          <thead><tr><th>Asset</th><th>24h %</th><th>7d %</th><th>vs peer set</th></tr></thead>
+          <tbody></tbody>
+        </table>
+        </div>
+        <div class="foot">Relative strength benchmarked against the tracked asset set (BTC, ETH, SOL, XAUT, XRP, DOGE) — no external index/DXY feed is integrated in this build.</div>
+      </div>
+    </div>
+  </section>
+
+  <section id="secSetups">
+    <h2><span class="n">06</span>&nbsp; Trade setups</h2>
+    <div class="table-scroll">
+    <table id="setupsTable">
+      <thead><tr><th>Setup</th><th>Trigger / entry</th><th>Invalidation (stop)</th><th>Target 1</th><th>Target 2</th><th>R:R</th><th>Confirmation needed</th></tr></thead>
+      <tbody></tbody>
+    </table>
+    </div>
+  </section>
+
+  <section id="secRisk">
+    <h2><span class="n">07</span>&nbsp; Risk notes</h2>
+    <div class="riskbox"><ul id="riskList"></ul></div>
+    <div style="margin-top:14px;">
+      <label class="small muted" for="catalystNotes" style="display:block;margin-bottom:6px;font-family:var(--mono);">Manual catalyst log (not fetched automatically — enter today's known events, stored in this browser only)</label>
+      <textarea id="catalystNotes" class="catalyst-input" placeholder="e.g. 13:30 UTC — US CPI print; 18:00 UTC — FOMC minutes"></textarea>
+    </div>
+  </section>
+
+  <section id="secAppendix">
+    <h2><span class="n">08</span>&nbsp; Appendix — last 10 daily candles</h2>
+    <div class="table-scroll">
+    <table id="candlesTable">
+      <thead><tr><th>Date (UTC)</th><th>Open</th><th>High</th><th>Low</th><th>Close</th><th>Volume</th></tr></thead>
+      <tbody></tbody>
+    </table>
+    </div>
+  </section>
+
+  <div class="card-actions">
+    <button id="copyBtn">Copy brief as text</button>
+  </div>
+
+  <footer>
+    <div class="disclaimer">This output is analysis for trade-planning purposes only. It is not a recommendation to buy or sell any instrument.</div>
+    <div id="sourceNote" style="margin-top:6px;"></div>
+  </footer>
+
+</div>
+
+<script>
+"use strict";
+
+/* =========================================================================
+   CONFIG
+   ========================================================================= */
+const SYMBOL_MAP = { BTC:'BTCUSDT', ETH:'ETHUSDT', SOL:'SOLUSDT', XAUT:'XAUTUSDT', XRP:'XRPUSDT', DOGE:'DOGEUSDT' };
+const DISPLAY_NAME = { BTC:'BTC-USD', ETH:'ETH-USD', SOL:'SOL-USD', XAUT:'XAUT-USD', XRP:'XRP-USD', DOGE:'DOGE-USD' };
+const API = 'https://api.binance.com/api/v3';
+const WS_BASE = 'wss://stream.binance.com:9443/ws';
+const TF_MS = { '15m': 15*60*1000, '1h': 60*60*1000, '4h': 4*60*60*1000 };
+const SESSION_BOUNDARIES = [ {hour:0, label:'Asian'}, {hour:8, label:'London'}, {hour:13, label:'US'}, {hour:21, label:'Late'} ];
+
+// Returns the next UTC session-boundary crossing at or after `nowMs`, e.g. {time, label:'London'}
+function nextSessionBreak(nowMs){
+  const d = new Date(nowMs);
+  const dayStart = Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate());
+  const candidates = SESSION_BOUNDARIES.map(b => ({time: dayStart + b.hour*3600000, label: b.label}));
+  candidates.push({time: dayStart + 86400000, label:'Asian'}); // tomorrow's Asian open
+  for(const c of candidates) if(c.time > nowMs) return c;
+  return candidates[candidates.length-1];
+}
+
+// All UTC session-boundary timestamps that fall within [fromMs, toMs], inclusive, spanning multiple days if needed
+function sessionBreaksInRange(fromMs, toMs){
+  const out = [];
+  const startDay = Math.floor(fromMs/86400000)*86400000;
+  const endDay = Math.ceil(toMs/86400000)*86400000;
+  for(let day=startDay; day<=endDay; day+=86400000){
+    for(const b of SESSION_BOUNDARIES){
+      const t = day + b.hour*3600000;
+      if(t >= fromMs && t <= toMs) out.push({time:t, label:b.label});
+    }
+  }
+  return out;
+}
+const ANALYSIS_INTERVAL_MS = 60*1000; // full analysis re-run cadence, per desk requirement
+
+const STATE = {
+  symbol: 'BTC',
+  execTf: '1h',
+  loading: false,
+  lastFetch: null,
+  data: null,     // computed bundle for current symbol
+  peers: null,    // 24h ticker stats for all 4 symbols
+  errors: []      // list of {section, message}
+};
+
+// Live tick / chart state — separate from STATE so websocket ticks never block
+// or wait on the once-a-minute full analysis fetch.
+const LIVE = {
+  ws: null,
+  reconnectTimer: null,
+  lastTradePrice: null,
+  prevTradePrice: null,
+  candles: [],        // working candle array for the chart (cloned from exec candles, then live-updated)
+  view: { start: 0, count: 120 },
+  rightGutter: 10,    // empty candle-slots of space reserved past the last bar — keeps candles off the right edge
+  dragging: false,
+  dragStartX: 0,
+  dragStartView: 0,
+  pinchStartDist: null,
+  pinchStartCount: null,
+  priceZoom: 1,           // 1 = auto-fit; <1 = zoomed in on price scale; >1 = zoomed out
+  axisDragging: false,
+  axisDragStartY: 0,
+  axisDragStartZoom: 1,
+  canvas: null, ctx: null, dpr: 1,
+  redrawScheduled: false,
+  sessionVP: null,     // today's session POC/VAH/VAL, recomputed once per analysis cycle
+  optionWalls: null,   // {available, callWall, putWall, expiryLabel} recomputed once per analysis cycle
+  lastPadR: 80,
+  hover: { active:false, x:0, y:0 } // crosshair position in canvas CSS pixels
+};
+
+const OPTIONS_UNDERLYING = { BTC:'BTC', ETH:'ETH' }; // Deribit only lists options on these two of our six instruments
+
+/* =========================================================================
+   FORMAT HELPERS
+   ========================================================================= */
+function fmtPrice(n, dp){
+  if(n === null || n === undefined || isNaN(n)) return '—';
+  if(dp === undefined){
+    dp = Math.abs(n) >= 1000 ? 2 : (Math.abs(n) >= 1 ? 3 : 5);
+  }
+  return Number(n).toLocaleString('en-US', {minimumFractionDigits:dp, maximumFractionDigits:dp});
+}
+function fmtPct(n, dp=2){
+  if(n === null || n === undefined || isNaN(n)) return '—';
+  const s = (n*100).toFixed(dp);
+  return (n>=0?'+':'') + s + '%';
+}
+function fmtVol(n){
+  if(n === null || n === undefined || isNaN(n)) return '—';
+  if(n >= 1e9) return (n/1e9).toFixed(2)+'B';
+  if(n >= 1e6) return (n/1e6).toFixed(2)+'M';
+  if(n >= 1e3) return (n/1e3).toFixed(2)+'K';
+  return n.toFixed(2);
+}
+function fmtDate(ts){
+  const d = new Date(ts);
+  return d.toISOString().slice(0,10);
+}
+function fmtTime(ts){
+  const d = new Date(ts);
+  return d.toISOString().slice(11,19)+' UTC';
+}
+function dirClass(n){ return n>0 ? 'up' : (n<0 ? 'down' : ''); }
+
+/* =========================================================================
+   DATA FETCH
+   ========================================================================= */
+async function fetchJSON(url){
+  const res = await fetch(url);
+  if(!res.ok){
+    throw new Error(`HTTP ${res.status} on ${url}`);
+  }
+  return res.json();
+}
+
+function toCandle(k){
+  return {
+    openTime: k[0],
+    open: parseFloat(k[1]),
+    high: parseFloat(k[2]),
+    low: parseFloat(k[3]),
+    close: parseFloat(k[4]),
+    volume: parseFloat(k[5]),
+    closeTime: k[6],
+    quoteVolume: parseFloat(k[7]),
+    trades: k[8]
+  };
+}
+
+async function fetchKlines(pair, interval, limit){
+  const url = `${API}/klines?symbol=${pair}&interval=${interval}&limit=${limit}`;
+  const raw = await fetchJSON(url);
+  return raw.map(toCandle);
+}
+
+async function fetchTicker24hr(pair){
+  return fetchJSON(`${API}/ticker/24hr?symbol=${pair}`);
+}
+
+// Fetch 1-minute candles covering today (UTC) for the session volume profile.
+// Binance caps a single request at 1000 candles (~16.6h), so we paginate
+// forward with startTime until we reach "now".
+async function fetchTodayMinuteKlines(pair, todayStartMs){
+  let out = [];
+  let cursor = todayStartMs;
+  const now = Date.now();
+  let guard = 0;
+  while(cursor < now && guard < 3){
+    const url = `${API}/klines?symbol=${pair}&interval=1m&startTime=${cursor}&limit=1000`;
+    const raw = await fetchJSON(url);
+    if(!raw.length) break;
+    const batch = raw.map(toCandle);
+    out = out.concat(batch);
+    const lastClose = batch[batch.length-1].closeTime;
+    if(lastClose <= cursor) break;
+    cursor = lastClose + 1;
+    guard++;
+  }
+  return out;
+}
+
+/* ---- Options "wall" levels (Deribit public API — BTC/ETH only) ---- */
+const DERIBIT_MONTHS = {JAN:0,FEB:1,MAR:2,APR:3,MAY:4,JUN:5,JUL:6,AUG:7,SEP:8,OCT:9,NOV:10,DEC:11};
+
+function parseDeribitExpiry(code){
+  // e.g. "26SEP26" -> day 26, month SEP, year 2026
+  const m = code.match(/^(\d{1,2})([A-Z]{3})(\d{2})$/);
+  if(!m) return null;
+  const day = parseInt(m[1],10), month = DERIBIT_MONTHS[m[2]], year = 2000+parseInt(m[3],10);
+  if(month === undefined) return null;
+  return Date.UTC(year, month, day, 8, 0, 0); // Deribit options expire 08:00 UTC
+}
+
+async function fetchOptionWalls(symbol){
+  const currency = OPTIONS_UNDERLYING[symbol];
+  if(!currency) return {available:false, reason:'Deribit does not list options on this underlying'};
+  const url = `https://www.deribit.com/api/v2/public/get_book_summary_by_currency?currency=${currency}&kind=option`;
+  let json;
+  try{
+    json = await fetchJSON(url);
+  } catch(e){
+    return {available:false, reason:`Deribit fetch failed (${e.message})`};
+  }
+  const rows = (json && json.result) ? json.result : [];
+  if(!rows.length) return {available:false, reason:'Deribit returned no open contracts'};
+
+  const now = Date.now();
+  let nearestExpiry = null;
+  const parsed = [];
+  for(const r of rows){
+    const parts = r.instrument_name.split('-'); // e.g. BTC-26SEP26-70000-C
+    if(parts.length !== 4) continue;
+    const expiryMs = parseDeribitExpiry(parts[1]);
+    const strike = parseFloat(parts[2]);
+    const type = parts[3]; // 'C' or 'P'
+    const oi = parseFloat(r.open_interest) || 0;
+    if(expiryMs === null || isNaN(strike) || expiryMs <= now) continue;
+    parsed.push({expiryMs, strike, type, oi});
+    if(nearestExpiry === null || expiryMs < nearestExpiry) nearestExpiry = expiryMs;
+  }
+  if(nearestExpiry === null) return {available:false, reason:'No live (non-expired) contracts parsed from Deribit response'};
+
+  const nearTerm = parsed.filter(p => p.expiryMs === nearestExpiry);
+  const calls = nearTerm.filter(p => p.type === 'C');
+  const puts = nearTerm.filter(p => p.type === 'P');
+  if(!calls.length || !puts.length) return {available:false, reason:'Nearest expiry is missing call or put open interest data'};
+
+  const callWallRow = calls.reduce((a,b) => b.oi > a.oi ? b : a);
+  const putWallRow = puts.reduce((a,b) => b.oi > a.oi ? b : a);
+
+  return {
+    available: true,
+    callWall: callWallRow.strike,
+    callWallOI: callWallRow.oi,
+    putWall: putWallRow.strike,
+    putWallOI: putWallRow.oi,
+    expiryMs: nearestExpiry,
+    expiryLabel: new Date(nearestExpiry).toISOString().slice(0,10)
+  };
+}
+
+/* =========================================================================
+   MATH: EMA / ATR / PIVOTS / VWAP / VOLUME PROFILE / FIB / GAPS
+   ========================================================================= */
+function ema(values, period){
+  const out = new Array(values.length).fill(null);
+  if(values.length < period) return out;
+  const k = 2/(period+1);
+  let seed = 0;
+  for(let i=0;i<period;i++) seed += values[i];
+  seed /= period;
+  out[period-1] = seed;
+  for(let i=period;i<values.length;i++){
+    out[i] = values[i]*k + out[i-1]*(1-k);
+  }
+  return out;
+}
+
+function atrWilder(candles, period=14){
+  const tr = [];
+  for(let i=0;i<candles.length;i++){
+    if(i===0){ tr.push(candles[i].high - candles[i].low); continue; }
+    const c = candles[i], p = candles[i-1];
+    tr.push(Math.max(c.high-c.low, Math.abs(c.high-p.close), Math.abs(c.low-p.close)));
+  }
+  const out = new Array(tr.length).fill(null);
+  if(tr.length < period) return out;
+  let seed = 0;
+  for(let i=0;i<period;i++) seed += tr[i];
+  seed /= period;
+  out[period-1] = seed;
+  for(let i=period;i<tr.length;i++){
+    out[i] = (out[i-1]*(period-1) + tr[i]) / period;
+  }
+  return out;
+}
+
+function classicPivots(H,L,C){
+  const P = (H+L+C)/3;
+  return {
+    P,
+    R1: 2*P - L, S1: 2*P - H,
+    R2: P + (H-L), S2: P - (H-L),
+    R3: H + 2*(P-L), S3: L - 2*(H-P)
+  };
+}
+
+function anchoredVWAP(candles, anchorTime){
+  let sumPV = 0, sumV = 0;
+  for(const c of candles){
+    if(c.openTime >= anchorTime){
+      const tp = (c.high + c.low + c.close)/3;
+      sumPV += tp*c.volume;
+      sumV += c.volume;
+    }
+  }
+  return sumV > 0 ? sumPV/sumV : null;
+}
+
+function volumeProfile(candles, bins=30){
+  if(candles.length === 0) return null;
+  const highs = candles.map(c=>c.high), lows = candles.map(c=>c.low);
+  const max = Math.max(...highs), min = Math.min(...lows);
+  if(max === min) return null;
+  const width = (max-min)/bins;
+  const vols = new Array(bins).fill(0);
+  for(const c of candles){
+    const lo = c.low, hi = c.high;
+    const span = (hi-lo) || width;
+    for(let i=0;i<bins;i++){
+      const binLo = min + i*width, binHi = binLo + width;
+      const overlap = Math.max(0, Math.min(hi,binHi) - Math.max(lo,binLo));
+      if(overlap > 0) vols[i] += c.volume * (overlap/span);
+    }
+  }
+  const total = vols.reduce((a,b)=>a+b,0);
+  let pocIdx = 0;
+  for(let i=1;i<bins;i++) if(vols[i] > vols[pocIdx]) pocIdx = i;
+  let lo = pocIdx, hi = pocIdx, covered = vols[pocIdx];
+  while(covered/total < 0.70 && (lo>0 || hi<bins-1)){
+    const leftVol = lo>0 ? vols[lo-1] : -1;
+    const rightVol = hi<bins-1 ? vols[hi+1] : -1;
+    if(rightVol >= leftVol){ hi++; covered += vols[hi]; }
+    else { lo--; covered += vols[lo]; }
+  }
+  return {
+    poc: min + (pocIdx+0.5)*width,
+    vah: min + (hi+1)*width,
+    val: min + lo*width,
+    totalVolume: total
+  };
+}
+
+function findSwing(dailyCandles, lookback=60){
+  const arr = dailyCandles.slice(-lookback);
+  if(arr.length < 2) return null;
+  let hiC = arr[0], loC = arr[0];
+  for(const c of arr){
+    if(c.high > hiC.high) hiC = c;
+    if(c.low < loC.low) loC = c;
+  }
+  const direction = hiC.openTime > loC.openTime ? 'up' : 'down';
+  return {swingHigh:hiC.high, swingHighTime:hiC.openTime, swingLow:loC.low, swingLowTime:loC.openTime, direction};
+}
+
+function fibLevels(swing){
+  if(!swing) return null;
+  const {swingHigh, swingLow, direction} = swing;
+  const range = swingHigh - swingLow;
+  const ratios = [0, 0.236, 0.382, 0.5, 0.618, 0.786, 1];
+  const retracements = ratios.map(r => ({
+    ratio: r,
+    price: direction === 'up' ? swingHigh - range*r : swingLow + range*r
+  }));
+  const extRatios = [1.272, 1.618];
+  const extensions = extRatios.map(r => ({
+    ratio: r,
+    price: direction === 'up' ? swingHigh + range*(r-1) : swingLow - range*(r-1)
+  }));
+  return {direction, swingHigh, swingLow, retracements, extensions};
+}
+
+function findUnfilledGaps(dailyCandles, thresholdPct=0.005){
+  const gaps = [];
+  for(let i=1;i<dailyCandles.length;i++){
+    const prevClose = dailyCandles[i-1].close, open = dailyCandles[i].open;
+    const diffPct = (open - prevClose)/prevClose;
+    if(Math.abs(diffPct) > thresholdPct){
+      gaps.push({date: dailyCandles[i].openTime, from: prevClose, to: open, pct: diffPct, idx: i});
+    }
+  }
+  for(const g of gaps){
+    const lo = Math.min(g.from, g.to), hi = Math.max(g.from, g.to);
+    g.filled = false;
+    for(let j=g.idx; j<dailyCandles.length; j++){
+      if(dailyCandles[j].low <= hi && dailyCandles[j].high >= lo){ g.filled = true; break; }
+    }
+  }
+  return gaps.filter(g=>!g.filled);
+}
+
+/* =========================================================================
+   MAIN PIPELINE
+   ========================================================================= */
+async function loadAll(){
+  if(STATE.loading) return;
+  STATE.loading = true;
+  STATE.errors = [];
+  setStatus('loading', 'Fetching live data from Binance…');
+  document.getElementById('errorBanner').style.display = 'none';
+
+  const symbol = STATE.symbol;
+  const pair = SYMBOL_MAP[symbol];
+  const execInterval = STATE.execTf;
+  const execLimit = execInterval === '15m' ? 1000 : 500;
+
+  let daily=null, hourly=null, exec=null, ticker=null, peerTickers=null, todayMinutes=null, optionWalls=null;
+
+  try{
+    [daily, hourly, exec, ticker] = await Promise.all([
+      fetchKlines(pair, '1d', 300),
+      fetchKlines(pair, '1h', 220),
+      fetchKlines(pair, execInterval, execLimit),
+      fetchTicker24hr(pair)
+    ]);
+  } catch(e){
+    STATE.errors.push({section:'core', message: e.message});
+  }
+
+  if(daily && daily.length){
+    try{
+      const todayStart = daily[daily.length-1].openTime;
+      todayMinutes = await fetchTodayMinuteKlines(pair, todayStart);
+    } catch(e){
+      STATE.errors.push({section:'session-volume-profile', message: e.message});
+    }
+  }
+
+  try{
+    optionWalls = await fetchOptionWalls(symbol);
+  } catch(e){
+    optionWalls = {available:false, reason: e.message};
+  }
+
+  try{
+    const entries = await Promise.all(Object.entries(SYMBOL_MAP).map(async ([sym, p]) => {
+      const t = await fetchTicker24hr(p);
+      return [sym, t];
+    }));
+    peerTickers = Object.fromEntries(entries);
+  } catch(e){
+    STATE.errors.push({section:'peers', message: e.message});
+  }
+
+  STATE.lastFetch = Date.now();
+  STATE.loading = false;
+
+  if(!daily || !hourly || !exec || !ticker){
+    setStatus('error', 'Live data fetch failed — see banner below.');
+    showErrorBanner();
+    STATE.data = null;
+    render();
+    return;
+  }
+
+  STATE.peers = peerTickers;
+  STATE.data = computeBundle({symbol, pair, daily, hourly, exec, ticker, execInterval, todayMinutes, optionWalls});
+  LIVE.sessionVP = STATE.data.sessionVP;
+  LIVE.optionWalls = STATE.data.optionWalls;
+  setStatus('live', `Live — Binance spot, fetched ${fmtTime(STATE.lastFetch)}`);
+  render();
+  resetChartCandles(exec);
+}
+
+function computeBundle({symbol, pair, daily, hourly, exec, ticker, execInterval, todayMinutes, optionWalls}){
+  const last = daily[daily.length-1];
+  const prev = daily[daily.length-2];
+  const prevPrev = daily[daily.length-3];
+  const lastPrice = parseFloat(ticker.lastPrice);
+
+  // Prior day OHLC (most recently CLOSED daily candle relative to "today")
+  const prevDay = { open: prev.open, high: prev.high, low: prev.low, close: prev.close, openTime: prev.openTime };
+
+  // Prior day VWAP from hourly candles within prior day's UTC window
+  const prevDayStart = prev.openTime, prevDayEnd = prev.closeTime;
+  const prevDayHourly = hourly.filter(c => c.openTime >= prevDayStart && c.openTime <= prevDayEnd);
+  const prevDayVWAP = prevDayHourly.length ? anchoredVWAP(prevDayHourly, prevDayStart) : null;
+
+  // Today's session VWAP, anchored from today's UTC 00:00
+  const todayStart = last.openTime;
+  const todayHourly = hourly.filter(c => c.openTime >= todayStart);
+  const sessionVWAPVal = todayHourly.length ? anchoredVWAP(todayHourly, todayStart) : anchoredVWAP(hourly, todayStart);
+
+  // Volume vs 20-day average (last 20 CLOSED daily candles, excluding the still-forming one)
+  const closedDaily = daily.slice(0, -1);
+  const last20 = closedDaily.slice(-20);
+  const avgVol20 = last20.length ? last20.reduce((a,c)=>a+c.volume,0)/last20.length : null;
+  const currentVolume24h = parseFloat(ticker.volume);
+
+  // Session ranges for today (Asian/London/US, UTC buckets) + prior "overnight" (prior US close -> today Asian open)
+  const sessionsToday = computeSessionRanges(todayHourly);
+  const priorDayHourly = hourly.filter(c => c.openTime >= prevDayStart && c.openTime < todayStart);
+  const overnightRange = computeOvernightRange(priorDayHourly, todayHourly);
+
+  // Pivots from prior day OHLC
+  const pivots = classicPivots(prevDay.high, prevDay.low, prevDay.close);
+
+  // EMAs on daily closes
+  const dailyCloses = daily.map(c=>c.close);
+  const ema9 = ema(dailyCloses, 9), ema20 = ema(dailyCloses, 20), ema50 = ema(dailyCloses, 50), ema200 = ema(dailyCloses, 200);
+  const lastIdx = dailyCloses.length - 1;
+  const emaVals = {
+    ema9: ema9[lastIdx], ema20: ema20[lastIdx], ema50: ema50[lastIdx], ema200: ema200[lastIdx]
+  };
+
+  // ATR on daily and on execution timeframe
+  const atrDaily = atrWilder(daily, 14);
+  const atrDailyVal = atrDaily[atrDaily.length-1];
+  const atrDailyPrior = atrDaily.slice(-21, -1).filter(v=>v!==null);
+  const atrDailyAvg20 = atrDailyPrior.length ? atrDailyPrior.reduce((a,b)=>a+b,0)/atrDailyPrior.length : null;
+
+  const atrExec = atrWilder(exec, 14);
+  const atrExecVal = atrExec[atrExec.length-1];
+  const atrExecPrior = atrExec.slice(-21,-1).filter(v=>v!==null);
+  const atrExecAvg20 = atrExecPrior.length ? atrExecPrior.reduce((a,b)=>a+b,0)/atrExecPrior.length : null;
+
+  // Volume profile over last 5 / 10 / 20 daily sessions, using hourly candles within those windows
+  const vp5 = volumeProfileForDays(closedDaily, hourly, 5);
+  const vp10 = volumeProfileForDays(closedDaily, hourly, 10);
+  const vp20 = volumeProfileForDays(closedDaily, hourly, 20);
+
+  // Current session's own volume profile (today, UTC 00:00 -> now), from 1m candles
+  let sessionVP = null;
+  if(todayMinutes && todayMinutes.length){
+    const vp = volumeProfile(todayMinutes, 24);
+    if(vp) sessionVP = {...vp, minutePoints: todayMinutes.length};
+  }
+
+  // Fibonacci from most recent significant swing (60-day lookback on daily candles)
+  const swing = findSwing(closedDaily, 60);
+  const fib = fibLevels(swing);
+
+  // Unfilled gaps
+  const gaps = findUnfilledGaps(closedDaily.slice(-60));
+
+  // Trend / regime
+  const htfTrend = classifyHTFTrend(lastPrice, emaVals);
+  const intradayTrend = classifyIntradayTrend(exec, sessionVWAPVal);
+  const regime = classifyRegime(lastPrice, vp20, currentVolume24h, avgVol20, atrExecVal, atrExecAvg20);
+
+  return {
+    symbol, pair, lastPrice, ticker,
+    daily, hourly, exec, execInterval,
+    last10Daily: daily.slice(-11, -1), // last 10 CLOSED candles
+    prevDay, prevDayVWAP, sessionVWAP: sessionVWAPVal,
+    avgVol20, currentVolume24h,
+    sessionsToday, overnightRange,
+    pivots, emaVals, atrDailyVal, atrDailyAvg20, atrExecVal, atrExecAvg20,
+    vp5, vp10, vp20, sessionVP, optionWalls,
+    swing, fib, gaps,
+    htfTrend, intradayTrend, regime,
+    fetchedAt: Date.now()
+  };
+}
+
+function volumeProfileForDays(closedDaily, hourly, n){
+  const days = closedDaily.slice(-n);
+  if(days.length === 0) return null;
+  const start = days[0].openTime, end = days[days.length-1].closeTime;
+  const window = hourly.filter(c => c.openTime >= start && c.openTime <= end);
+  const candles = window.length ? window : days; // fall back to daily granularity if hourly window is short
+  const vp = volumeProfile(candles, 30);
+  return vp ? {...vp, n, hourlyPoints: window.length} : null;
+}
+
+// Shared UTC session windows (Asian/London/US/Late) — used for session-range stats
+// below and for the "session break" countdown drawn on the chart.
+const SESSION_WINDOWS = [
+  {key:'asian', name:'Asian', startH:0, endH:8},
+  {key:'london', name:'London', startH:8, endH:13},
+  {key:'us', name:'US', startH:13, endH:21},
+  {key:'late', name:'Late', startH:21, endH:24}
+];
+
+function computeSessionRanges(todayHourly){
+  const out = {};
+  for(const w of SESSION_WINDOWS){
+    const inBucket = todayHourly.filter(c => {
+      const h = new Date(c.openTime).getUTCHours();
+      return h >= w.startH && h < w.endH;
+    });
+    if(inBucket.length){
+      out[w.key] = {
+        high: Math.max(...inBucket.map(c=>c.high)),
+        low: Math.min(...inBucket.map(c=>c.low)),
+        volume: inBucket.reduce((a,c)=>a+c.volume,0)
+      };
+    } else {
+      out[w.key] = null;
+    }
+  }
+  return out;
+}
+
+// Current UTC session + time remaining until it breaks into the next one.
+function currentSessionCountdown(nowMs){
+  const d = new Date(nowMs);
+  const hourFrac = d.getUTCHours() + d.getUTCMinutes()/60 + d.getUTCSeconds()/3600;
+  const todayMidnight = Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate());
+  const win = SESSION_WINDOWS.find(w => hourFrac >= w.startH && hourFrac < w.endH) || SESSION_WINDOWS[SESSION_WINDOWS.length-1];
+  const breaksAt = todayMidnight + win.endH*3600000; // endH=24 lands exactly on next day's 00:00 UTC
+  return {name: win.name, breaksAt, remainingMs: Math.max(0, breaksAt - nowMs)};
+}
+
+function computeOvernightRange(priorDayHourly, todayHourly){
+  // "Overnight" proxy for a 24/7 market: prior US session close (21:00 UTC) through today's Asian open (00:00-08:00 UTC)
+  const priorLate = priorDayHourly.filter(c => new Date(c.openTime).getUTCHours() >= 21);
+  const todayAsian = todayHourly.filter(c => new Date(c.openTime).getUTCHours() < 8);
+  const combined = [...priorLate, ...todayAsian];
+  if(combined.length === 0) return null;
+  return {
+    high: Math.max(...combined.map(c=>c.high)),
+    low: Math.min(...combined.map(c=>c.low)),
+    volume: combined.reduce((a,c)=>a+c.volume,0),
+    candleCount: combined.length
+  };
+}
+
+function classifyHTFTrend(price, emaVals){
+  const {ema50, ema200} = emaVals;
+  if(ema50 === null || ema200 === null) return {label:'insufficient history', dir:'flat'};
+  if(price > ema50 && ema50 > ema200) return {label:'uptrend (price > 50EMA > 200EMA)', dir:'up'};
+  if(price < ema50 && ema50 < ema200) return {label:'downtrend (price < 50EMA < 200EMA)', dir:'down'};
+  return {label:'mixed / transitional (EMA stack not aligned)', dir:'mixed'};
+}
+
+function classifyIntradayTrend(exec, vwap){
+  if(exec.length < 5 || vwap === null) return {label:'insufficient data', dir:'flat'};
+  const last3 = exec.slice(-3).map(c=>c.close);
+  const rising = last3[2] > last3[0];
+  const price = exec[exec.length-1].close;
+  if(price > vwap && rising) return {label:'bullish (price above session VWAP, closes rising)', dir:'up'};
+  if(price < vwap && !rising) return {label:'bearish (price below session VWAP, closes falling)', dir:'down'};
+  return {label:'choppy / two-sided around VWAP', dir:'mixed'};
+}
+
+function classifyRegime(price, vp20, currentVol24h, avgVol20, atrExecVal, atrExecAvg20){
+  if(!vp20) return {label:'volume profile unavailable', expansion:false};
+  const volExpanding = (avgVol20 && currentVol24h) ? currentVol24h > avgVol20*1.15 : false;
+  const atrExpanding = (atrExecVal && atrExecAvg20) ? atrExecVal > atrExecAvg20*1.15 : false;
+  let label;
+  if(price > vp20.vah) label = volExpanding ? 'trending above 20-session value area, volume expansion' : 'probing above 20-session value area on average volume';
+  else if(price < vp20.val) label = volExpanding ? 'trending below 20-session value area, volume expansion' : 'probing below 20-session value area on average volume';
+  else label = 'balancing inside the 20-session value area';
+  return {label, volExpanding, atrExpanding};
+}
+
+/* =========================================================================
+   TRADE SETUP GENERATION (rule-based, references computed levels only)
+   ========================================================================= */
+function generateSetups(d){
+  const setups = [];
+  const price = d.lastPrice;
+  const atr = d.atrExecVal;
+  const tfLabel = d.execInterval;
+
+  if(atr === null || !d.vp20 || !d.pivots){
+    return setups;
+  }
+
+  // 1. Breakout / continuation above value + R1
+  {
+    const entry = Math.max(d.vp20.vah, d.pivots.R1);
+    const stop = entry - 1.0*atr;
+    const t1 = d.pivots.R2;
+    const t2 = d.pivots.R3;
+    const risk = entry - stop;
+    const reward1 = t1 - entry;
+    setups.push({
+      name: 'Breakout continuation (long)',
+      trigger: `Acceptance above ${fmtPrice(entry)} (higher of 20-session VAH ${fmtPrice(d.vp20.vah)} and floor pivot R1 ${fmtPrice(d.pivots.R1)}) — invalid if price re-enters value area without volume support`,
+      stop: `${fmtPrice(stop)} (entry − 1× ${tfLabel} ATR of ${fmtPrice(atr)})`,
+      t1: fmtPrice(t1) + ' (pivot R2)',
+      t2: fmtPrice(t2) + ' (pivot R3)',
+      rr: risk>0 ? (reward1/risk).toFixed(2) : '—',
+      confirm: `${tfLabel} closing volume > 20-period average and hold above trigger for one full ${tfLabel} bar`
+    });
+  }
+
+  // 2. Mean reversion fade at value area edges
+  {
+    const nearUpper = Math.abs(price - d.vp20.vah) <= Math.abs(price - d.vp20.val);
+    const level = nearUpper ? d.vp20.vah : d.vp20.val;
+    const otherLevel = nearUpper ? d.pivots.R1 : d.pivots.S1;
+    const entry = level;
+    const stop = nearUpper ? entry + 1.0*atr : entry - 1.0*atr;
+    const t1 = d.vp20.poc;
+    const t2 = nearUpper ? d.vp20.val : d.vp20.vah;
+    const risk = Math.abs(entry-stop);
+    const reward1 = Math.abs(t1-entry);
+    setups.push({
+      name: nearUpper ? 'Fade at value area high (short)' : 'Fade at value area low (long)',
+      trigger: `Rejection wick / failed break at ${fmtPrice(entry)} (20-session ${nearUpper?'VAH':'VAL'}, near floor pivot ${nearUpper?'R1 '+fmtPrice(d.pivots.R1):'S1 '+fmtPrice(d.pivots.S1)}) confirmed by a ${tfLabel} close back inside the value area`,
+      stop: `${fmtPrice(stop)} (entry ${nearUpper?'+':'−'} 1× ${tfLabel} ATR of ${fmtPrice(atr)})`,
+      t1: fmtPrice(t1) + ' (20-session POC)',
+      t2: fmtPrice(t2) + ' (opposite value area edge)',
+      rr: risk>0 ? (reward1/risk).toFixed(2) : '—',
+      confirm: `Declining ${tfLabel} volume into the level (exhaustion) plus a rejection wick ≥ 50% of bar range`
+    });
+  }
+
+  // 3. Trend continuation with EMA / VWAP pullback
+  {
+    const trendUp = d.htfTrend.dir === 'up';
+    const trendDown = d.htfTrend.dir === 'down';
+    if(trendUp || trendDown){
+      const pullbackLevel = d.sessionVWAP !== null ? d.sessionVWAP : d.emaVals.ema20;
+      const entry = pullbackLevel;
+      const stop = trendUp ? entry - 1.25*atr : entry + 1.25*atr;
+      const t1 = trendUp ? d.pivots.R2 : d.pivots.S2;
+      const t2 = trendUp ? (d.swing ? d.swing.swingHigh : d.pivots.R3) : (d.swing ? d.swing.swingLow : d.pivots.S3);
+      const risk = Math.abs(entry-stop);
+      const reward1 = Math.abs(t1-entry);
+      setups.push({
+        name: trendUp ? 'Trend-continuation pullback (long)' : 'Trend-continuation pullback (short)',
+        trigger: `Pullback into session VWAP / 20EMA confluence near ${fmtPrice(entry)}, entered on a ${tfLabel} reversal candle in the direction of the daily trend (${d.htfTrend.label})`,
+        stop: `${fmtPrice(stop)} (entry ${trendUp?'−':'+'} 1.25× ${tfLabel} ATR of ${fmtPrice(atr)})`,
+        t1: fmtPrice(t1) + (trendUp ? ' (pivot R2)' : ' (pivot S2)'),
+        t2: fmtPrice(t2) + (d.swing ? ' (recent swing extreme)' : ' (pivot R3/S3)'),
+        rr: risk>0 ? (reward1/risk).toFixed(2) : '—',
+        confirm: `Daily trend intact (price ${trendUp?'above':'below'} 50EMA/200EMA) and ${tfLabel} volume confirming the reversal candle`
+      });
+    }
+  }
+
+  return setups;
+}
+
+/* =========================================================================
+   RENDER
+   ========================================================================= */
+function setStatus(kind, text){
+  const el = document.getElementById('status');
+  el.className = 'status ' + (kind==='live' ? 'live' : (kind==='error' ? 'error' : ''));
+  document.getElementById('statusText').textContent = text;
+}
+
+function showErrorBanner(){
+  const el = document.getElementById('errorBanner');
+  const msgs = STATE.errors.map(e => `[${e.section}] ${e.message}`).join('  •  ');
+  el.textContent = `Live data unavailable — no levels are being fabricated or estimated in this state. Details: ${msgs}. Try Refresh, or check your network / Binance API availability.`;
+  el.style.display = 'block';
+}
+
+function render(){
+  const symbol = STATE.symbol;
+  document.getElementById('brandTitle').textContent =
+    `${DISPLAY_NAME[symbol]} — Pre-Market Desk Brief — ${new Date().toISOString().slice(0,10)}`;
+
+  if(!STATE.data){
+    document.getElementById('lede').textContent = 'No live data available for this instrument right now — see error banner above. No estimated levels are shown to avoid presenting fabricated numbers.';
+    ['checklist','levelsTable','setupsTable','riskList','candlesTable','rsTable'].forEach(id=>{
+      const el = document.getElementById(id);
+      if(el.tagName === 'TABLE') el.querySelector('tbody').innerHTML = '';
+      else el.innerHTML = '';
+    });
+    document.getElementById('structureText').textContent = '';
+    return;
+  }
+
+  const d = STATE.data;
+  renderLede(d);
+  renderChecklist(d);
+  renderLevels(d);
+  renderStructure(d);
+  renderSetups(d);
+  renderRisk(d);
+  renderCandles(d);
+  document.getElementById('sourceNote').textContent =
+    `Source: Binance public spot REST API (api.binance.com) for candles/levels, symbol ${d.pair}, and Binance's public trade WebSocket stream for the live tick price/chart. Analysis pulled ${new Date(d.fetchedAt).toISOString()}, re-run automatically every 60s while "analysis every 1m" is checked. All levels below are computed client-side in this page — nothing is server-cached or pre-generated.`;
+}
+
+function renderLede(d){
+  const price = d.lastPrice;
+  const bias = d.htfTrend.dir === d.intradayTrend.dir && d.htfTrend.dir !== 'mixed' && d.htfTrend.dir !== 'flat'
+    ? d.htfTrend.dir : 'neutral';
+  const conflict = (d.htfTrend.dir !== d.intradayTrend.dir) && d.htfTrend.dir !== 'flat' && d.intradayTrend.dir !== 'flat';
+
+  const biasWord = bias === 'up' ? 'Bullish' : bias === 'down' ? 'Bearish' : 'Neutral / mixed';
+  const el = document.getElementById('lede');
+  el.className = 'lede ' + (bias==='up' ? 'bias-bull' : bias==='down' ? 'bias-bear' : 'bias-neutral');
+
+  const vwapRel = d.sessionVWAP !== null ? (price > d.sessionVWAP ? 'above' : 'below') : null;
+  const vaRel = d.vp20 ? (price > d.vp20.vah ? 'above the value area' : price < d.vp20.val ? 'below the value area' : 'inside the value area') : 'value area unavailable';
+
+  let text = `<strong>${biasWord}.</strong> ${DISPLAY_NAME[d.symbol]} trades at ${fmtPrice(price)}, `;
+  text += `${vwapRel ? `sitting ${vwapRel} today's session VWAP (${fmtPrice(d.sessionVWAP)}) ` : ''}`;
+  text += `and ${vaRel} (VAH ${d.vp20?fmtPrice(d.vp20.vah):'—'} / VAL ${d.vp20?fmtPrice(d.vp20.val):'—'}, 20-session). `;
+  text += `Daily structure is ${d.htfTrend.label}${conflict ? `, which <span class="flag">conflicts</span> with the ${d.intradayTrend.label} intraday tape` : ` and intraday flow is ${d.intradayTrend.label}`}.`;
+  el.innerHTML = text;
+}
+
+function renderChecklist(d){
+  const items = [
+    {ok:true, label:'Last 10 daily candles (OHLCV)', detail:`Loaded from Binance 1d klines, ${d.last10Daily.length} candles.`},
+    {ok:true, label:"Prior day OHLC + prior day VWAP", detail:`PDH ${fmtPrice(d.prevDay.high)} / PDL ${fmtPrice(d.prevDay.low)} / PDC ${fmtPrice(d.prevDay.close)}; VWAP ${d.prevDayVWAP!==null?fmtPrice(d.prevDayVWAP):'insufficient 1h coverage — flagged'}.`},
+    {ok:true, label:'Current price + volume vs 20-day average volume', detail:`Last ${fmtPrice(d.lastPrice)}; 24h volume ${fmtVol(d.currentVolume24h)} vs 20-day avg ${d.avgVol20?fmtVol(d.avgVol20):'—'}. Live price also streams tick-by-tick via Binance WebSocket in the chart above.`},
+    {ok:!!d.sessionVP, label:"Current session volume profile (POC / VAH / VAL)", detail: d.sessionVP ? `Computed from ${d.sessionVP.minutePoints} 1-minute candles since today 00:00 UTC; plotted as lines on the live chart.` : "Today's 1m candle fetch failed this cycle."},
+    {ok:!!d.overnightRange, label:'Overnight / after-hours range proxy', detail: d.overnightRange ? `Prior US close → today's Asian session range: H ${fmtPrice(d.overnightRange.high)} / L ${fmtPrice(d.overnightRange.low)}. Crypto trades 24/7 — this is a session-window proxy, not a true closed-market gap.` : 'Insufficient hourly coverage for this window.'},
+    {ok:false, label:'Scheduled catalysts (earnings / CPI / FOMC / NFP / sector news)', detail:'Not fetched automatically — no news/economic-calendar feed is wired into this build. Use the manual catalyst log in Section 07.'},
+    {ok: !!(d.optionWalls && d.optionWalls.available), label:'Options data (call/put wall levels, nearest expiry open interest)', detail: d.optionWalls
+      ? (d.optionWalls.available
+          ? `Deribit public API, nearest expiry ${d.optionWalls.expiryLabel}: call wall ${fmtPrice(d.optionWalls.callWall)} (OI ${fmtVol(d.optionWalls.callWallOI)}), put wall ${fmtPrice(d.optionWalls.putWall)} (OI ${fmtVol(d.optionWalls.putWallOI)}). Raw open-interest concentration proxy — not a delta-hedging gamma-exposure (GEX) or max-pain model.`
+          : `Unavailable this cycle — ${d.optionWalls.reason}.`)
+      : 'Not checked this cycle.'}
+  ];
+  const ul = document.getElementById('checklist');
+  ul.innerHTML = items.map(it => `
+    <li>
+      <span class="mark ${it.ok?'ok':'no'}">${it.ok?'✓':'✗'}</span>
+      <span><span class="label">${it.label}</span><span class="detail">${it.detail}</span></span>
+    </li>`).join('');
+}
+
+function renderLevels(d){
+  const rows = [];
+  rows.push(['Prior day high', fmtPrice(d.prevDay.high), 'PDH — high of the most recently closed daily (1d) candle']);
+  rows.push(['Prior day low', fmtPrice(d.prevDay.low), 'PDL — low of the most recently closed daily candle']);
+  rows.push(['Prior day close', fmtPrice(d.prevDay.close), 'PDC — close of the most recently closed daily candle']);
+  rows.push(['Prior day VWAP', d.prevDayVWAP!==null?fmtPrice(d.prevDayVWAP):'—', 'Σ(typical price × vol) / Σ(vol) over 1h candles inside the prior UTC day']);
+  rows.push(['Session VWAP (today)', d.sessionVWAP!==null?fmtPrice(d.sessionVWAP):'—', 'Anchored from today 00:00 UTC (session open), 1h candles']);
+  if(d.sessionVP){
+    rows.push(['Session POC (today)', fmtPrice(d.sessionVP.poc), `Volume histogram (24 bins) over today's 1m candles (${d.sessionVP.minutePoints} points) — also plotted on the live chart`]);
+    rows.push(['Session VAH (today)', fmtPrice(d.sessionVP.vah), 'Upper edge of the 70% value area around today\'s POC']);
+    rows.push(['Session VAL (today)', fmtPrice(d.sessionVP.val), 'Lower edge of the 70% value area around today\'s POC']);
+  } else {
+    rows.push(['Session POC / VAH / VAL (today)', 'unavailable', "Today's 1m candle fetch failed or returned no data this cycle"]);
+  }
+  rows.push(['Pivot (P)', fmtPrice(d.pivots.P), '(PDH + PDL + PDC) / 3']);
+  rows.push(['R1 / S1', `${fmtPrice(d.pivots.R1)} / ${fmtPrice(d.pivots.S1)}`, 'R1 = 2P−PDL · S1 = 2P−PDH']);
+  rows.push(['R2 / S2', `${fmtPrice(d.pivots.R2)} / ${fmtPrice(d.pivots.S2)}`, 'R2 = P+(PDH−PDL) · S2 = P−(PDH−PDL)']);
+  rows.push(['R3 / S3', `${fmtPrice(d.pivots.R3)} / ${fmtPrice(d.pivots.S3)}`, 'R3 = PDH+2(P−PDL) · S3 = PDL−2(PDH−P)']);
+  if(d.vp5) rows.push(['POC / VAH / VAL (5-session)', `${fmtPrice(d.vp5.poc)} / ${fmtPrice(d.vp5.vah)} / ${fmtPrice(d.vp5.val)}`, `Volume histogram (30 bins) over last 5 daily sessions, ${d.vp5.hourlyPoints} hourly candles; value area = 70% of volume around POC`]);
+  if(d.vp10) rows.push(['POC / VAH / VAL (10-session)', `${fmtPrice(d.vp10.poc)} / ${fmtPrice(d.vp10.vah)} / ${fmtPrice(d.vp10.val)}`, `Same method, last 10 daily sessions, ${d.vp10.hourlyPoints} hourly candles`]);
+  if(d.vp20) rows.push(['POC / VAH / VAL (20-session)', `${fmtPrice(d.vp20.poc)} / ${fmtPrice(d.vp20.vah)} / ${fmtPrice(d.vp20.val)}`, `Same method, last 20 daily sessions, ${d.vp20.hourlyPoints} hourly candles`]);
+  const e = d.emaVals;
+  const eRow = (label, val) => rows.push([label, val!==null?fmtPrice(val):'insufficient history', `${val!==null ? (d.lastPrice>val?'Price is above':'Price is below') : ''} — daily close basis`]);
+  eRow('EMA 9', e.ema9); eRow('EMA 20', e.ema20); eRow('EMA 50', e.ema50); eRow('EMA 200', e.ema200);
+  rows.push([`ATR(14) — ${d.execInterval}`, d.atrExecVal!==null?fmtPrice(d.atrExecVal):'—', `Wilder ATR, 14-period, on the ${d.execInterval} execution timeframe — use for stop sizing`]);
+  rows.push(['ATR(14) — daily', d.atrDailyVal!==null?fmtPrice(d.atrDailyVal):'—', `Wilder ATR, 14-period, daily candles (context only, avg-20 = ${d.atrDailyAvg20?fmtPrice(d.atrDailyAvg20):'—'})`]);
+  if(d.fib){
+    const swingLabel = `${d.fib.direction==='up'?'swing low → swing high':'swing high → swing low'} (${fmtDate(d.swing.swingLowTime)} → ${fmtDate(d.swing.swingHighTime)}, 60-day lookback)`;
+    d.fib.retracements.forEach(r => rows.push([`Fib ${(r.ratio*100).toFixed(1)}%`, fmtPrice(r.price), swingLabel]));
+    d.fib.extensions.forEach(r => rows.push([`Fib ext ${(r.ratio*100).toFixed(1)}%`, fmtPrice(r.price), 'Extension beyond the same swing']));
+  }
+  if(d.gaps.length){
+    d.gaps.forEach(g => rows.push([`Unfilled gap (${fmtDate(g.date)})`, `${fmtPrice(Math.min(g.from,g.to))} – ${fmtPrice(Math.max(g.from,g.to))}`, `Daily open vs prior close, ${fmtPct(g.pct)} — not yet retraded`]));
+  } else {
+    rows.push(['Unfilled gaps', 'none detected', 'Daily open-vs-prior-close check over the last 60 sessions, 0.5% threshold']);
+  }
+  if(d.optionWalls && d.optionWalls.available){
+    rows.push(['Call wall', fmtPrice(d.optionWalls.callWall), `Largest call open interest (${fmtVol(d.optionWalls.callWallOI)} contracts) at Deribit's nearest expiry, ${d.optionWalls.expiryLabel} — raw OI concentration, not a GEX model`]);
+    rows.push(['Put wall', fmtPrice(d.optionWalls.putWall), `Largest put open interest (${fmtVol(d.optionWalls.putWallOI)} contracts) at Deribit's nearest expiry, ${d.optionWalls.expiryLabel} — raw OI concentration, not a GEX model`]);
+  } else {
+    rows.push(['Call wall / put wall', 'unavailable', d.optionWalls ? d.optionWalls.reason : 'Deribit lists options on BTC/ETH only']);
+  }
+
+  const tbody = document.querySelector('#levelsTable tbody');
+  tbody.innerHTML = rows.map(r => `<tr><td>${r[0]}</td><td class="num">${r[1]}</td><td class="method">${r[2]}</td></tr>`).join('');
+}
+
+function renderStructure(d){
+  const conflict = d.htfTrend.dir !== d.intradayTrend.dir && d.htfTrend.dir !== 'flat' && d.intradayTrend.dir !== 'flat';
+  let text = `Higher-timeframe (daily) trend: <strong>${d.htfTrend.label}</strong>. Intraday (${d.execInterval}) trend: <strong>${d.intradayTrend.label}</strong>.`;
+  text += conflict ? ` <span class="flag">These conflict</span> — treat breakout setups with reduced size until they align.` : ' These are aligned.';
+  text += ` Regime read: <strong>${d.regime.label}</strong>.`;
+  if(d.regime.volExpanding) text += ' 24h volume is running >15% above the 20-day average.';
+  if(d.regime.atrExpanding) text += ` ${d.execInterval} ATR is running >15% above its 20-period average — volatility expansion.`;
+  document.getElementById('structureText').innerHTML = text;
+
+  const tbody = document.querySelector('#rsTable tbody');
+  if(!STATE.peers){
+    tbody.innerHTML = `<tr><td colspan="4" class="muted">Peer ticker data unavailable this fetch.</td></tr>`;
+    return;
+  }
+  const rows = Object.entries(STATE.peers).map(([sym, t]) => {
+    const chg = parseFloat(t.priceChangePercent)/100;
+    return {sym, chg24h: chg};
+  });
+  const avg = rows.reduce((a,r)=>a+r.chg24h,0)/rows.length;
+  rows.sort((a,b)=>b.chg24h-a.chg24h);
+  tbody.innerHTML = rows.map(r => `
+    <tr class="${r.sym===d.symbol?'':''}">
+      <td>${r.sym===d.symbol?'<strong>':''}${DISPLAY_NAME[r.sym]}${r.sym===d.symbol?'</strong>':''}</td>
+      <td class="num ${dirClass(r.chg24h)}">${fmtPct(r.chg24h)}</td>
+      <td class="num muted">n/a (7d needs deeper history)</td>
+      <td class="num ${dirClass(r.chg24h-avg)}">${r.chg24h>avg?'stronger than peer set':'weaker than peer set'}</td>
+    </tr>`).join('');
+}
+
+function renderSetups(d){
+  const setups = generateSetups(d);
+  const tbody = document.querySelector('#setupsTable tbody');
+  if(setups.length === 0){
+    tbody.innerHTML = `<tr><td colspan="7" class="muted">Insufficient data to build rule-based setups this fetch (missing ATR, pivots, or volume profile).</td></tr>`;
+    return;
+  }
+  tbody.innerHTML = setups.map(s => `
+    <tr>
+      <td><strong>${s.name}</strong></td>
+      <td class="small">${s.trigger}</td>
+      <td class="small">${s.stop}</td>
+      <td class="num">${s.t1}</td>
+      <td class="num">${s.t2}</td>
+      <td class="num">${s.rr}</td>
+      <td class="small">${s.confirm}</td>
+    </tr>`).join('');
+}
+
+function renderRisk(d){
+  const items = [];
+  items.push({crit:true, text:'No economic-calendar or earnings feed is integrated — manually confirm today\'s CPI/FOMC/NFP/sector-news schedule before sizing any of the setups above, and log it in the manual catalyst box.'});
+  items.push({crit:false, text: (d.optionWalls && d.optionWalls.available)
+    ? `Call/put wall levels are a raw open-interest concentration proxy from Deribit's nearest listed expiry (${d.optionWalls.expiryLabel}) — not a full delta-hedging gamma-exposure (GEX) or max-pain model. This is spot data overall; futures basis and funding are not reflected.`
+    : `Options data (call/put walls, skew, max pain) is unavailable this cycle${d.optionWalls && d.optionWalls.reason ? ' — '+d.optionWalls.reason : ''}. Flagged rather than estimated. This is spot data only; futures basis and funding are not reflected.`});
+  const atrNote = (d.atrExecVal && d.atrExecAvg20)
+    ? `${d.execInterval} ATR(14) is ${fmtPrice(d.atrExecVal)} vs its 20-period average of ${fmtPrice(d.atrExecAvg20)} (${fmtPct((d.atrExecVal-d.atrExecAvg20)/d.atrExecAvg20)}) — ${d.atrExecVal>d.atrExecAvg20*1.15?'volatility expansion, size down':'volatility in-line/contracted'}.`
+    : 'ATR comparison unavailable this fetch.';
+  items.push({crit:false, text: atrNote});
+  const volNote = (d.currentVolume24h && d.avgVol20)
+    ? `24h traded volume ${fmtVol(d.currentVolume24h)} vs 20-day daily average ${fmtVol(d.avgVol20)} (${fmtPct((d.currentVolume24h-d.avgVol20)/d.avgVol20)}).`
+    : 'Volume comparison unavailable this fetch.';
+  items.push({crit:false, text: volNote});
+  items.push({crit:false, text:'Crypto trades 24/7 — funding-rate resets on perpetual futures (typically 00:00 / 08:00 / 16:00 UTC) can move spot via arbitrage flow even though this brief does not pull funding data directly.'});
+  const ul = document.getElementById('riskList');
+  ul.innerHTML = items.map(it => `<li class="${it.crit?'crit':''}">${it.text}</li>`).join('');
+}
+
+function renderCandles(d){
+  const tbody = document.querySelector('#candlesTable tbody');
+  tbody.innerHTML = d.last10Daily.slice().reverse().map(c => `
+    <tr>
+      <td>${fmtDate(c.openTime)}</td>
+      <td class="num">${fmtPrice(c.open)}</td>
+      <td class="num">${fmtPrice(c.high)}</td>
+      <td class="num">${fmtPrice(c.low)}</td>
+      <td class="num">${fmtPrice(c.close)}</td>
+      <td class="num">${fmtVol(c.volume)}</td>
+    </tr>`).join('');
+}
+
+/* =========================================================================
+   TEXT EXPORT
+   ========================================================================= */
+function buildPlainText(){
+  const d = STATE.data;
+  if(!d) return 'No live data available.';
+  let out = '';
+  out += `PRE-MARKET DESK BRIEF — ${DISPLAY_NAME[d.symbol]} — ${new Date().toISOString().slice(0,10)}\n`;
+  out += `Source: Binance spot REST API, ${d.pair}, fetched ${new Date(d.fetchedAt).toISOString()}\n\n`;
+  out += `SUMMARY\n${document.getElementById('lede').textContent}\n\n`;
+  out += `KEY LEVELS\n`;
+  document.querySelectorAll('#levelsTable tbody tr').forEach(tr=>{
+    const c = tr.querySelectorAll('td');
+    out += `- ${c[0].textContent}: ${c[1].textContent}  [${c[2].textContent}]\n`;
+  });
+  out += `\nMARKET STRUCTURE\n${document.getElementById('structureText').textContent}\n\n`;
+  out += `TRADE SETUPS\n`;
+  document.querySelectorAll('#setupsTable tbody tr').forEach(tr=>{
+    const c = tr.querySelectorAll('td');
+    if(c.length<7) return;
+    out += `- ${c[0].textContent}\n  Trigger: ${c[1].textContent}\n  Stop: ${c[2].textContent}\n  T1: ${c[3].textContent}  T2: ${c[4].textContent}  R:R ${c[5].textContent}\n  Confirmation: ${c[6].textContent}\n`;
+  });
+  out += `\nRISK NOTES\n`;
+  document.querySelectorAll('#riskList li').forEach(li=> out += `- ${li.textContent}\n`);
+  const catalysts = document.getElementById('catalystNotes').value.trim();
+  if(catalysts) out += `\nMANUAL CATALYST LOG\n${catalysts}\n`;
+  out += `\nAnalysis for trade-planning purposes only — not a recommendation to buy or sell.\n`;
+  return out;
+}
+
+/* =========================================================================
+   LIVE TICK STREAM (WebSocket) + LIVE CANDLE AGGREGATION
+   ========================================================================= */
+function connectTickStream(){
+  closeTickStream();
+  const pair = SYMBOL_MAP[STATE.symbol];
+  setTickStatus('connecting', 'Connecting to tick stream…');
+  try{
+    const ws = new WebSocket(`${WS_BASE}/${pair.toLowerCase()}@trade`);
+    LIVE.ws = ws;
+    ws.onopen = () => setTickStatus('live', `Live ticks — ${DISPLAY_NAME[STATE.symbol]} @ Binance`);
+    ws.onmessage = (ev) => {
+      let msg;
+      try{ msg = JSON.parse(ev.data); } catch(e){ return; }
+      if(msg.e !== 'trade') return;
+      handleTrade(parseFloat(msg.p), parseFloat(msg.q), msg.T);
+    };
+    ws.onerror = () => setTickStatus('error', 'Tick stream error — retrying…');
+    ws.onclose = () => {
+      setTickStatus('error', 'Tick stream disconnected — reconnecting…');
+      LIVE.reconnectTimer = setTimeout(connectTickStream, 4000);
+    };
+  } catch(e){
+    setTickStatus('error', 'Could not open tick stream (WebSocket blocked?)');
+  }
+}
+function closeTickStream(){
+  if(LIVE.reconnectTimer){ clearTimeout(LIVE.reconnectTimer); LIVE.reconnectTimer = null; }
+  if(LIVE.ws){
+    LIVE.ws.onclose = null; LIVE.ws.onerror = null;
+    try{ LIVE.ws.close(); }catch(e){}
+    LIVE.ws = null;
+  }
+}
+function setTickStatus(kind, text){
+  const el = document.getElementById('tickStatus');
+  if(!el) return;
+  el.className = 'tick-status ' + (kind==='live' ? 'live' : (kind==='error' ? 'error' : ''));
+  document.getElementById('tickStatusText').textContent = text;
+}
+
+function handleTrade(price, qty, tradeTime){
+  LIVE.prevTradePrice = LIVE.lastTradePrice;
+  LIVE.lastTradePrice = price;
+  updateLivePriceTag(price);
+  updateLiveCandle(price, qty, tradeTime);
+  scheduleChartRedraw();
+}
+
+function updateLivePriceTag(price){
+  const tag = document.getElementById('livePriceTag');
+  if(!tag) return;
+  tag.textContent = fmtPrice(price);
+  tag.classList.remove('up','down');
+  if(LIVE.prevTradePrice !== null){
+    tag.classList.add(price >= LIVE.prevTradePrice ? 'up' : 'down');
+  }
+}
+
+function resetChartCandles(execCandles){
+  LIVE.candles = execCandles.map(c => ({...c}));
+  LIVE.view.count = Math.min(120, LIVE.candles.length);
+  LIVE.view.start = Math.max(0, LIVE.candles.length - LIVE.view.count);
+  LIVE.priceZoom = 1;
+  document.getElementById('jumpLiveBtn').style.display = 'none';
+  scheduleChartRedraw();
+}
+
+function updateLiveCandle(price, qty, tradeTime){
+  const tfMs = TF_MS[STATE.execTf] || TF_MS['1h'];
+  const bucketStart = Math.floor(tradeTime / tfMs) * tfMs;
+  const candles = LIVE.candles;
+  const last = candles[candles.length-1];
+  if(last && last.openTime === bucketStart){
+    last.high = Math.max(last.high, price);
+    last.low = Math.min(last.low, price);
+    last.close = price;
+    last.volume += qty;
+  } else if(last && bucketStart > last.openTime){
+    // A new bar has formed. We deliberately do NOT shift the view to keep it
+    // pinned to the right edge — the chart is not anchored to the latest bar;
+    // the "Jump to live" control (surfaced by checkFollowing, called every
+    // draw) is how the user chooses to snap back to it.
+    candles.push({openTime:bucketStart, closeTime:bucketStart+tfMs-1, open:price, high:price, low:price, close:price, volume:qty});
+  }
+  // keep the working array bounded so it doesn't grow unbounded across a long session
+  if(candles.length > 2000){
+    const drop = candles.length-2000;
+    candles.splice(0, drop);
+    LIVE.view.start = Math.max(0, LIVE.view.start - drop);
+  }
+}
+
+function scheduleChartRedraw(){
+  if(LIVE.redrawScheduled) return;
+  LIVE.redrawScheduled = true;
+  requestAnimationFrame(() => { LIVE.redrawScheduled = false; drawChart(); });
+}
+
+/* =========================================================================
+   CANVAS CHART — candlesticks + session VAL/POC/VAH + option walls,
+   with independent time pan/zoom and price-scale zoom, and a maximize mode.
+   ========================================================================= */
+function initChart(){
+  const canvas = document.getElementById('priceChart');
+  LIVE.canvas = canvas;
+  LIVE.ctx = canvas.getContext('2d');
+
+  const resize = () => {
+    const rect = canvas.getBoundingClientRect();
+    LIVE.dpr = window.devicePixelRatio || 1;
+    canvas.width = Math.max(1, Math.floor(rect.width * LIVE.dpr));
+    canvas.height = Math.max(1, Math.floor(rect.height * LIVE.dpr));
+    drawChart();
+  };
+  LIVE.resizeCanvas = resize;
+  window.addEventListener('resize', resize);
+  resize();
+
+  const inAxisStrip = (e) => {
+    const rect = canvas.getBoundingClientRect();
+    const x = (e.offsetX !== undefined ? e.offsetX : e.clientX - rect.left);
+    return x > rect.width - LIVE.lastPadR;
+  };
+
+  canvas.addEventListener('wheel', (e) => {
+    e.preventDefault();
+    if(inAxisStrip(e)){
+      zoomPriceScale(e.deltaY < 0 ? 0.88 : 1.14);
+    } else {
+      zoomChart(e.deltaY < 0 ? 0.85 : 1.18, e.offsetX);
+    }
+  }, {passive:false});
+
+  canvas.addEventListener('mousedown', (e) => {
+    if(inAxisStrip(e)){
+      LIVE.axisDragging = true;
+      LIVE.axisDragStartY = e.clientY;
+      LIVE.axisDragStartZoom = LIVE.priceZoom;
+      canvas.classList.add('axis-drag');
+    } else {
+      LIVE.dragging = true;
+      LIVE.dragStartX = e.clientX;
+      LIVE.dragStartView = LIVE.view.start;
+      canvas.classList.add('dragging');
+    }
+  });
+  canvas.addEventListener('dblclick', (e) => {
+    if(inAxisStrip(e)){ LIVE.priceZoom = 1; drawChart(); }
+  });
+  window.addEventListener('mousemove', (e) => {
+    if(LIVE.axisDragging){
+      const dy = e.clientY - LIVE.axisDragStartY;
+      LIVE.priceZoom = clampPriceZoom(LIVE.axisDragStartZoom * Math.exp(dy*0.006));
+      drawChart();
+    } else if(LIVE.dragging){
+      LIVE.hover.active = false;
+      panChartByPixels(e.clientX - LIVE.dragStartX);
+    } else {
+      const rect = canvas.getBoundingClientRect();
+      const x = e.clientX - rect.left, y = e.clientY - rect.top;
+      if(x >= 0 && x <= rect.width && y >= 0 && y <= rect.height){
+        LIVE.hover.active = true; LIVE.hover.x = x; LIVE.hover.y = y;
+      } else {
+        LIVE.hover.active = false;
+      }
+      drawChart();
+    }
+  });
+  canvas.addEventListener('mouseleave', () => { LIVE.hover.active = false; drawChart(); });
+  window.addEventListener('mouseup', () => {
+    LIVE.dragging = false;
+    LIVE.axisDragging = false;
+    canvas.classList.remove('dragging','axis-drag');
+  });
+
+  canvas.addEventListener('touchstart', (e) => {
+    if(e.touches.length === 1){
+      LIVE.dragging = true;
+      LIVE.dragStartX = e.touches[0].clientX;
+      LIVE.dragStartView = LIVE.view.start;
+      const rect = canvas.getBoundingClientRect();
+      LIVE.hover.active = true;
+      LIVE.hover.x = e.touches[0].clientX - rect.left;
+      LIVE.hover.y = e.touches[0].clientY - rect.top;
+    } else if(e.touches.length === 2){
+      LIVE.dragging = false;
+      LIVE.hover.active = false;
+      LIVE.pinchStartDist = touchDist(e.touches);
+      LIVE.pinchStartCount = LIVE.view.count;
+    }
+  }, {passive:true});
+  canvas.addEventListener('touchmove', (e) => {
+    if(e.touches.length === 1 && LIVE.dragging){
+      const rect = canvas.getBoundingClientRect();
+      LIVE.hover.active = true;
+      LIVE.hover.x = e.touches[0].clientX - rect.left;
+      LIVE.hover.y = e.touches[0].clientY - rect.top;
+      panChartByPixels(e.touches[0].clientX - LIVE.dragStartX);
+    } else if(e.touches.length === 2 && LIVE.pinchStartDist){
+      const dist = touchDist(e.touches);
+      const ratio = LIVE.pinchStartDist / dist;
+      LIVE.view.count = clampViewCount(Math.round(LIVE.pinchStartCount * ratio));
+      clampViewStart();
+      drawChart();
+    }
+  }, {passive:true});
+  canvas.addEventListener('touchend', () => {
+    LIVE.dragging = false;
+    LIVE.pinchStartDist = null;
+    LIVE.hover.active = false;
+    drawChart();
+  });
+
+  document.getElementById('zoomInBtn').addEventListener('click', () => zoomChart(0.8, LIVE.canvas.clientWidth/2));
+  document.getElementById('zoomOutBtn').addEventListener('click', () => zoomChart(1.25, LIVE.canvas.clientWidth/2));
+  document.getElementById('resetZoomBtn').addEventListener('click', () => {
+    LIVE.view.count = Math.min(120, LIVE.candles.length);
+    LIVE.view.start = Math.max(0, LIVE.candles.length - LIVE.view.count);
+    LIVE.priceZoom = 1;
+    drawChart();
+  });
+  document.getElementById('jumpLiveBtn').addEventListener('click', () => {
+    LIVE.view.count = Math.min(LIVE.view.count, LIVE.candles.length);
+    LIVE.view.start = Math.max(0, LIVE.candles.length - LIVE.view.count);
+    drawChart();
+  });
+
+  document.getElementById('maximizeBtn').addEventListener('click', toggleMaximize);
+  document.addEventListener('keydown', (e) => {
+    if(e.key === 'Escape' && document.getElementById('chartPanel').classList.contains('maximized')) toggleMaximize();
+  });
+}
+
+function toggleMaximize(){
+  const panel = document.getElementById('chartPanel');
+  const btn = document.getElementById('maximizeBtn');
+  const on = panel.classList.toggle('maximized');
+  btn.textContent = on ? '✕ Restore' : '⤢ Maximize';
+  btn.title = on ? 'Restore chart' : 'Maximize chart';
+  requestAnimationFrame(() => { if(LIVE.resizeCanvas) LIVE.resizeCanvas(); });
+}
+
+function touchDist(touches){
+  const dx = touches[0].clientX - touches[1].clientX;
+  const dy = touches[0].clientY - touches[1].clientY;
+  return Math.sqrt(dx*dx + dy*dy);
+}
+function clampViewCount(n){
+  return Math.max(15, Math.min(LIVE.candles.length || 15, n));
+}
+function clampViewStart(){
+  const maxStart = Math.max(0, LIVE.candles.length - LIVE.view.count);
+  LIVE.view.start = Math.max(0, Math.min(maxStart, LIVE.view.start));
+}
+function clampPriceZoom(z){
+  return Math.max(0.15, Math.min(6, z));
+}
+function zoomPriceScale(factor){
+  LIVE.priceZoom = clampPriceZoom(LIVE.priceZoom * factor);
+  drawChart();
+}
+function zoomChart(factor, anchorPx){
+  if(!LIVE.candles.length) return;
+  const rect = LIVE.canvas.getBoundingClientRect();
+  const anchorFrac = Math.max(0, Math.min(1, anchorPx / rect.width));
+  const anchorIdx = LIVE.view.start + anchorFrac * LIVE.view.count;
+  const newCount = clampViewCount(Math.round(LIVE.view.count * factor));
+  LIVE.view.start = Math.round(anchorIdx - anchorFrac * newCount);
+  LIVE.view.count = newCount;
+  clampViewStart();
+  drawChart();
+}
+function panChartByPixels(dxPixels){
+  if(!LIVE.candles.length) return;
+  const rect = LIVE.canvas.getBoundingClientRect();
+  const candleWidthPx = rect.width / (LIVE.view.count + LIVE.rightGutter);
+  const deltaCandles = Math.round(dxPixels / candleWidthPx);
+  LIVE.view.start = LIVE.dragStartView - deltaCandles;
+  clampViewStart();
+  drawChart();
+}
+function checkFollowing(){
+  const atEnd = LIVE.candles.length > 0 && (LIVE.view.start + LIVE.view.count >= LIVE.candles.length);
+  document.getElementById('jumpLiveBtn').style.display = atEnd ? 'none' : 'block';
+}
+
+function drawChart(){
+  const ctx = LIVE.ctx;
+  if(!ctx || !LIVE.canvas) return;
+  const dpr = LIVE.dpr;
+  const W = LIVE.canvas.width, H = LIVE.canvas.height;
+  ctx.save();
+  ctx.scale(dpr, dpr);
+  const cw = W/dpr, ch = H/dpr;
+  ctx.clearRect(0,0,cw,ch);
+
+  const AXIS_COLOR = '#39FF14'; // bright green — all price-axis text uses this
+  const padL = 8, padR = 80, padT = 14, padB = 22;
+  LIVE.lastPadR = padR; // used by mouse/wheel handlers to detect axis-strip interaction
+
+  const candles = LIVE.candles;
+  if(!candles.length){
+    ctx.fillStyle = '#576068';
+    ctx.font = '13px IBM Plex Mono, monospace';
+    ctx.fillText('Waiting for candle data…', 16, 24);
+    ctx.restore();
+    return;
+  }
+
+  clampViewStart();
+  checkFollowing();
+  const start = LIVE.view.start, count = LIVE.view.count;
+  const visible = candles.slice(start, start+count);
+  if(!visible.length){ ctx.restore(); return; }
+
+  const plotW = cw - padL - padR, plotH = ch - padT - padB;
+
+  let lo = Math.min(...visible.map(c=>c.low));
+  let hi = Math.max(...visible.map(c=>c.high));
+  const vp = LIVE.sessionVP;
+  if(vp){ lo = Math.min(lo, vp.val); hi = Math.max(hi, vp.vah); }
+  const walls = LIVE.optionWalls;
+  if(walls && walls.available){ lo = Math.min(lo, walls.putWall); hi = Math.max(hi, walls.callWall); }
+  const range = (hi - lo) || (hi*0.01) || 1;
+  lo -= range*0.06; hi += range*0.06;
+
+  // independent price-scale zoom, applied around the auto-fit center
+  const center = (lo+hi)/2;
+  const half = (hi-lo)/2 * LIVE.priceZoom;
+  lo = center - half; hi = center + half;
+
+  const yFor = (price) => padT + plotH * (1 - (price - lo)/(hi-lo));
+  const priceForY = (y) => lo + (hi-lo) * (1 - (y - padT)/plotH);
+  // reserve LIVE.rightGutter empty candle-slots of space so bars are never flush against the right edge
+  const slot = plotW / (count + LIVE.rightGutter);
+  const xFor = (i) => padL + i*slot + slot/2;
+  const tfMsForChart = TF_MS[STATE.execTf] || TF_MS['1h'];
+  const rangeStart = visible[0].openTime;
+  const timeForX = (x) => rangeStart + ((x - padL)/slot)*tfMsForChart;
+
+  function declutterY(entries, minGap){
+    const sorted = entries.slice().sort((a,b)=>a.y-b.y);
+    for(let i=1;i<sorted.length;i++){ if(sorted[i].y - sorted[i-1].y < minGap) sorted[i].y = sorted[i-1].y + minGap; }
+    for(let i=sorted.length-2;i>=0;i--){ if(sorted[i+1].y - sorted[i].y < minGap) sorted[i].y = sorted[i+1].y - minGap; }
+    return sorted;
+  }
+
+  // grid lines (stroke only for now — numeric labels are drawn later, after decluttering
+  // against the more important level/price/crosshair labels, so nothing on the axis overlaps)
+  ctx.strokeStyle = '#1B2229';
+  ctx.lineWidth = 1;
+  const gridLines = 5;
+  const gridTicks = [];
+  for(let g=0; g<=gridLines; g++){
+    const price = lo + (hi-lo)*g/gridLines;
+    const y = yFor(price);
+    ctx.beginPath(); ctx.moveTo(padL, y); ctx.lineTo(cw-padR, y); ctx.stroke();
+    gridTicks.push({y, price});
+  }
+
+  // session shading
+  if(vp){
+    ctx.fillStyle = 'rgba(91,141,190,0.06)';
+    const yVAH = yFor(vp.vah), yVAL = yFor(vp.val);
+    ctx.fillRect(padL, yVAH, plotW, yVAL-yVAH);
+  }
+
+  // session-break vertical lines (Asian/London/US/Late UTC boundaries) across the visible window
+  {
+    const rangeEnd = visible[visible.length-1].closeTime;
+    const xForTime = (t) => padL + ((t - rangeStart)/tfMsForChart)*slot;
+    const breaks = sessionBreaksInRange(rangeStart, rangeEnd);
+    ctx.setLineDash([2,4]);
+    ctx.strokeStyle = 'rgba(124,136,148,0.35)';
+    ctx.lineWidth = 1;
+    ctx.font = '10px IBM Plex Mono, monospace';
+    ctx.fillStyle = '#7C8894';
+    breaks.forEach(b => {
+      const x = xForTime(b.time);
+      if(x < padL || x > cw-padR) return;
+      ctx.beginPath(); ctx.moveTo(x, padT); ctx.lineTo(x, ch-padB); ctx.stroke();
+      ctx.fillText(b.label, x+3, padT+10);
+    });
+    ctx.setLineDash([]);
+  }
+
+  // candles
+  const bodyW = Math.max(1, slot*0.62);
+  for(let i=0;i<visible.length;i++){
+    const c = visible[i];
+    const x = xFor(i);
+    const up = c.close >= c.open;
+    ctx.strokeStyle = ctx.fillStyle = up ? '#37B889' : '#E2584A';
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(x, yFor(c.high));
+    ctx.lineTo(x, yFor(c.low));
+    ctx.stroke();
+    const yO = yFor(c.open), yC = yFor(c.close);
+    const top = Math.min(yO,yC), h = Math.max(1, Math.abs(yC-yO));
+    ctx.fillRect(x-bodyW/2, top, bodyW, h);
+  }
+
+  // live marker on the last (forming) candle, if it's in the visible window
+  const lastGlobalIdx = candles.length-1;
+  const lastCandle = candles[lastGlobalIdx];
+  const showingLastCandle = (start <= lastGlobalIdx && lastGlobalIdx < start+visible.length);
+  if(showingLastCandle){
+    const x = xFor(lastGlobalIdx - start);
+    ctx.fillStyle = lastCandle.close >= lastCandle.open ? '#37B889' : '#E2584A';
+    ctx.beginPath(); ctx.arc(x, yFor(lastCandle.close), 3, 0, Math.PI*2); ctx.fill();
+  }
+
+  // reference level lines: session VAL/POC/VAH + option call/put walls, drawn at their TRUE price
+  // position. Their axis labels are collected here and decluttered together with the live price
+  // tag and the crosshair (below) so no two values on the price axis ever overlap.
+  const levelLines = [];
+  if(vp){
+    levelLines.push({price: vp.vah, color: '#37B889', label: 'VAH'});
+    levelLines.push({price: vp.poc, color: '#5B8DBE', label: 'POC'});
+    levelLines.push({price: vp.val, color: '#E2584A', label: 'VAL'});
+  }
+  if(walls && walls.available){
+    levelLines.push({price: walls.callWall, color: '#C77DFF', label: 'Call wall'});
+    levelLines.push({price: walls.putWall, color: '#FF7DB0', label: 'Put wall'});
+  }
+  const priorityLabels = []; // {y, text, color, boxed} — decluttered as one group, highest priority
+  if(levelLines.length){
+    ctx.setLineDash([5,4]);
+    ctx.lineWidth = 1.3;
+    levelLines.forEach(l => {
+      const y = yFor(l.price);
+      if(y < padT-10 || y > ch-padB+10) return;
+      ctx.strokeStyle = l.color;
+      ctx.beginPath(); ctx.moveTo(padL, y); ctx.lineTo(cw-padR, y); ctx.stroke();
+      priorityLabels.push({y, leftText: `${l.label} ${fmtPrice(l.price)}`, rightText: fmtPrice(l.price), color: l.color, boxed:false});
+    });
+    ctx.setLineDash([]);
+  }
+
+  // current live price line + tag, and countdown to this bar's close
+  if(showingLastCandle){
+    const livePrice = LIVE.lastTradePrice !== null ? LIVE.lastTradePrice : lastCandle.close;
+    const y = Math.max(padT+6, Math.min(ch-padB-6, yFor(livePrice)));
+    ctx.setLineDash([2,3]);
+    ctx.strokeStyle = AXIS_COLOR;
+    ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(padL, y); ctx.lineTo(cw-padR, y); ctx.stroke();
+    ctx.setLineDash([]);
+    priorityLabels.push({y, leftText:null, rightText: fmtPrice(livePrice), color: AXIS_COLOR, boxed:true, isLivePrice:true});
+
+    const remainingMs = Math.max(0, lastCandle.closeTime - Date.now());
+    const totalSec = Math.floor(remainingMs/1000);
+    const mm = Math.floor(totalSec/60), ss = totalSec%60;
+    const countdownText = `⏱ ${mm}:${String(ss).padStart(2,'0')}`;
+    priorityLabels.push({y: y-14, leftText:null, rightText:null, color: AXIS_COLOR, boxed:false, isCountdown:true, countdownText});
+  }
+
+  // crosshair (TradingView-style): dashed lines under the cursor, with value tags where it
+  // intersects the price axis (right) and the time axis (bottom)
+  let hoverTimeLabel = null, hoverX = null;
+  if(LIVE.hover.active && LIVE.hover.x >= padL && LIVE.hover.x <= cw-padR && LIVE.hover.y >= padT && LIVE.hover.y <= ch-padB){
+    hoverX = LIVE.hover.x;
+    const hoverY = LIVE.hover.y;
+    ctx.setLineDash([3,3]);
+    ctx.strokeStyle = 'rgba(220,227,232,0.45)';
+    ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(hoverX, padT); ctx.lineTo(hoverX, ch-padB); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(padL, hoverY); ctx.lineTo(cw-padR, hoverY); ctx.stroke();
+    ctx.setLineDash([]);
+
+    const hoverPrice = priceForY(hoverY);
+    priorityLabels.push({y: hoverY, leftText:null, rightText: fmtPrice(hoverPrice), color:'#DCE3E8', boxed:true});
+
+    const hoverTime = timeForX(hoverX);
+    hoverTimeLabel = { x: hoverX, text: new Date(hoverTime).toISOString().slice(5,16).replace('T',' ') };
+  }
+
+  // resolve overlaps among the price-axis labels that matter (levels, live price, crosshair),
+  // then draw them — this is the group that must never overlap
+  const minGap = 15;
+  const resolved = priorityLabels.length ? declutterY(priorityLabels, minGap) : [];
+  ctx.font = '10.5px IBM Plex Mono, monospace';
+  resolved.forEach(l => {
+    if(l.isCountdown){
+      ctx.fillStyle = l.color;
+      ctx.fillText(l.countdownText, cw-padR+2, l.y+4);
+      return;
+    }
+    if(l.leftText){
+      ctx.fillStyle = l.color;
+      ctx.fillText(l.leftText, padL+4, l.y-3);
+    }
+    if(l.boxed){
+      const tagW = 68, tagH = 16;
+      ctx.fillStyle = '#0C1013';
+      ctx.strokeStyle = l.color;
+      ctx.lineWidth = 1;
+      ctx.fillRect(cw-padR, l.y-tagH/2, tagW, tagH);
+      ctx.strokeRect(cw-padR, l.y-tagH/2, tagW, tagH);
+      ctx.fillStyle = l.color;
+      ctx.fillText(l.rightText, cw-padR+6, l.y+4);
+    } else {
+      ctx.fillStyle = AXIS_COLOR;
+      ctx.fillText(l.rightText, cw-padR+8, l.y+4);
+    }
+  });
+
+  // grid labels: only drawn where they don't collide with a (now-resolved) priority label —
+  // the gridline itself is always drawn (above); only its numeric text can be dropped
+  ctx.font = '11px IBM Plex Mono, monospace';
+  ctx.fillStyle = AXIS_COLOR;
+  gridTicks.forEach(g => {
+    const collides = resolved.some(l => Math.abs(l.y - g.y) < minGap-1);
+    if(!collides) ctx.fillText(fmtPrice(g.price), cw-padR+8, g.y+4);
+  });
+
+  // countdown to the next session break (Asian/London/US/Late UTC boundary), top-right of the plot area
+  {
+    const next = nextSessionBreak(Date.now());
+    const remain = Math.max(0, next.time - Date.now());
+    const hh = Math.floor(remain/3600000);
+    const mm = Math.floor((remain%3600000)/60000);
+    const ss = Math.floor((remain%60000)/1000);
+    const label = `Next: ${next.label} in ${hh}:${String(mm).padStart(2,'0')}:${String(ss).padStart(2,'0')}`;
+    ctx.font = '10.5px IBM Plex Mono, monospace';
+    const textW = ctx.measureText(label).width;
+    const boxX = cw - padR - textW - 16, boxY = padT + 4;
+    ctx.fillStyle = 'rgba(12,16,19,0.85)';
+    ctx.fillRect(boxX, boxY, textW+10, 16);
+    ctx.strokeStyle = 'rgba(124,136,148,0.5)';
+    ctx.lineWidth = 1;
+    ctx.strokeRect(boxX, boxY, textW+10, 16);
+    ctx.fillStyle = '#7C8894';
+    ctx.fillText(label, boxX+5, boxY+11);
+  }
+
+  // time axis (first / middle / last visible), each skipped if it would collide with the crosshair's time tag
+  ctx.font = '10.5px IBM Plex Mono, monospace';
+  const timeLabel = (c) => {
+    const t = new Date(c.openTime);
+    return t.toISOString().slice(5,16).replace('T',' ');
+  };
+  const staticTimeLabels = [];
+  if(visible.length){
+    staticTimeLabels.push({x: padL, text: timeLabel(visible[0])});
+    staticTimeLabels.push({x: padL+plotW/2-40, text: timeLabel(visible[Math.floor(visible.length/2)])});
+    staticTimeLabels.push({x: padL+(visible.length-1)*slot+slot/2-45, text: timeLabel(visible[visible.length-1])});
+  }
+  const timeCollideGap = 78;
+  ctx.fillStyle = '#576068';
+  staticTimeLabels.forEach(t => {
+    if(hoverTimeLabel && Math.abs(t.x - (hoverTimeLabel.x-40)) < timeCollideGap) return; // crosshair time tag wins
+    ctx.fillText(t.text, t.x, ch-6);
+  });
+  if(hoverTimeLabel){
+    const tw = ctx.measureText(hoverTimeLabel.text).width;
+    const boxX = Math.max(padL, Math.min(cw-padR-tw-10, hoverTimeLabel.x - tw/2 - 5));
+    ctx.fillStyle = '#0C1013';
+    ctx.strokeStyle = 'rgba(220,227,232,0.6)';
+    ctx.lineWidth = 1;
+    ctx.fillRect(boxX, ch-padB, tw+10, 16);
+    ctx.strokeRect(boxX, ch-padB, tw+10, 16);
+    ctx.fillStyle = '#DCE3E8';
+    ctx.fillText(hoverTimeLabel.text, boxX+5, ch-padB+12);
+  }
+
+  ctx.restore();
+}
+
+/* =========================================================================
+   WIRE UP UI
+   ========================================================================= */
+document.getElementById('symbolSelect').addEventListener('change', (e)=>{
+  STATE.symbol = e.target.value;
+  connectTickStream();
+  loadAll();
+});
+document.querySelectorAll('.tf-group button').forEach(btn=>{
+  btn.addEventListener('click', ()=>{
+    document.querySelectorAll('.tf-group button').forEach(b=>b.classList.remove('active'));
+    btn.classList.add('active');
+    STATE.execTf = btn.dataset.tf;
+    loadAll();
+  });
+});
+document.getElementById('refreshBtn').addEventListener('click', loadAll);
+document.getElementById('copyBtn').addEventListener('click', async ()=>{
+  const txt = buildPlainText();
+  try{
+    await navigator.clipboard.writeText(txt);
+    const btn = document.getElementById('copyBtn');
+    const orig = btn.textContent;
+    btn.textContent = 'Copied ✓';
+    setTimeout(()=>btn.textContent = orig, 1500);
+  } catch(e){
+    alert('Copy failed — select and copy the brief manually.\n\n' + txt.slice(0,200) + '…');
+  }
+});
+let autoTimer = null;
+function setAutoRefresh(on){
+  if(autoTimer){ clearInterval(autoTimer); autoTimer = null; }
+  if(on){ autoTimer = setInterval(loadAll, ANALYSIS_INTERVAL_MS); }
+}
+document.getElementById('autoRefresh').addEventListener('change', (e)=>{
+  setAutoRefresh(e.target.checked);
+});
+
+/* boot */
+initChart();
+connectTickStream();
+loadAll();
+setAutoRefresh(document.getElementById('autoRefresh').checked); // full analysis re-runs every 60s by default
+setInterval(scheduleChartRedraw, 1000); // keeps the bar-close countdown ticking even between trades
+</script>
+</body>
+</html>
