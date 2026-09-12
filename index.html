@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Pre-Market Desk Brief — BTC / ETH / SOL / XAUT</title>
+<title>Pre-Market Desk Brief — BTC / ETH / SOL / XAUT / XRP / DOGE</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -97,6 +97,8 @@
   .tag.warn{color:var(--warn);border-color:rgba(214,164,74,.4);}
 
   table{width:100%;border-collapse:collapse;font-size:13.5px;}
+  .table-scroll{overflow-x:auto;-webkit-overflow-scrolling:touch;}
+  .table-scroll table{min-width:560px;}
   th{
     text-align:left;font-family:var(--mono);font-weight:500;font-size:11.5px;color:var(--muted);
     padding:8px 10px;border-bottom:1px solid var(--border);white-space:nowrap;
@@ -178,6 +180,42 @@
   }
   #chartPanel.maximized #chartWrap{flex:1;height:auto;}
   #chartPanel.maximized .chart-hint{margin-top:10px;}
+
+  /* ---- mobile / small-viewport optimization ---- */
+  @media (max-width:680px){
+    .wrap{padding:16px 12px 60px;}
+    .topbar{flex-direction:column;align-items:stretch;gap:12px;padding-bottom:14px;}
+    .brand h1{font-size:16px;}
+    .controls{width:100%;justify-content:space-between;flex-wrap:wrap;gap:8px;}
+    #symbolSelect{flex:1 1 auto;min-width:110px;}
+    select, button{font-size:12.5px;padding:10px 9px;min-height:38px;}
+    .tf-group{flex:1 1 auto;}
+    .tf-group button{flex:1;}
+    label.small{font-size:11px;}
+    .status{font-size:11px;gap:2px 10px;}
+    h2{font-size:12px;}
+    .lede{font-size:14px;padding:13px 14px;}
+    section{margin-bottom:26px;}
+    table{font-size:12px;}
+    th, td{padding:7px 6px;}
+    .chart-toolbar{flex-direction:column;align-items:stretch;gap:8px;}
+    .chart-btns{justify-content:space-between;}
+    .chart-btns button{flex:1;min-height:38px;}
+    .live-price{font-size:17px;text-align:center;}
+    #chartWrap{height:300px;}
+    #chartPanel.maximized #chartWrap{height:auto;}
+    .chart-legend{gap:8px 12px;font-size:10.5px;}
+    .chart-hint{font-size:10px;}
+    .jump-live{top:8px;right:8px;padding:5px 8px;font-size:10.5px;}
+    .checklist li{padding:9px 10px;font-size:12.5px;}
+    .riskbox li{font-size:12.5px;padding:9px 10px;}
+    .catalyst-input{font-size:12.5px;}
+    footer{font-size:11px;}
+  }
+  @media (max-width:400px){
+    #chartWrap{height:260px;}
+    .brand .kicker{font-size:10.5px;}
+  }
 </style>
 </head>
 <body>
@@ -194,6 +232,8 @@
         <option value="ETH">ETH-USD</option>
         <option value="SOL">SOL-USD</option>
         <option value="XAUT">XAUT-USD</option>
+        <option value="XRP">XRP-USD</option>
+        <option value="DOGE">DOGE-USD</option>
       </select>
       <div class="tf-group" role="group" aria-label="Execution timeframe">
         <button data-tf="15m">15m</button>
@@ -242,7 +282,7 @@
         <span><span class="swatch" style="background:#FF7DB0;"></span>Put wall — largest put OI, nearest expiry</span>
         <span><span class="swatch" style="background:#7C8894;"></span>Session breaks — Asian/London/US/Late UTC boundaries</span>
       </div>
-      <div class="chart-hint">Scroll / pinch over the chart to zoom time, drag to pan. Scroll or drag vertically on the right price axis to zoom the price scale — "Reset view" restores both. Candles are the selected execution timeframe and are not force-anchored to the right edge as new ticks arrive; use "Jump to live" to snap back. A countdown to the current bar's close sits on the price axis, and a countdown to the next session break (Asian/London/US/Late) sits top-right of the chart. Analysis panels below refresh on a fixed 1-minute cycle.</div>
+      <div class="chart-hint">Move the mouse (or touch-drag) over the chart for a crosshair with live price/time readouts on the axes. Scroll / pinch over the chart to zoom time, drag to pan. Scroll or drag vertically on the right price axis to zoom the price scale — "Reset view" restores both. Candles are the selected execution timeframe and are not force-anchored to the right edge as new ticks arrive; use "Jump to live" to snap back. A countdown to the current bar's close sits on the price axis, and a countdown to the next session break (Asian/London/US/Late) sits top-right of the chart. Analysis panels below refresh on a fixed 1-minute cycle.</div>
     </div>
   </section>
 
@@ -253,10 +293,12 @@
 
   <section id="secLevels">
     <h2><span class="n">04</span>&nbsp; Key levels</h2>
+    <div class="table-scroll">
     <table id="levelsTable">
       <thead><tr><th>Level</th><th>Price</th><th>Method / inputs</th></tr></thead>
       <tbody></tbody>
     </table>
+    </div>
   </section>
 
   <section id="secStructure">
@@ -266,21 +308,25 @@
         <p id="structureText"></p>
       </div>
       <div>
+        <div class="table-scroll">
         <table id="rsTable">
           <thead><tr><th>Asset</th><th>24h %</th><th>7d %</th><th>vs peer set</th></tr></thead>
           <tbody></tbody>
         </table>
-        <div class="foot">Relative strength benchmarked against the four tracked assets (BTC, ETH, SOL, XAUT) — no external index/DXY feed is integrated in this build.</div>
+        </div>
+        <div class="foot">Relative strength benchmarked against the tracked asset set (BTC, ETH, SOL, XAUT, XRP, DOGE) — no external index/DXY feed is integrated in this build.</div>
       </div>
     </div>
   </section>
 
   <section id="secSetups">
     <h2><span class="n">06</span>&nbsp; Trade setups</h2>
+    <div class="table-scroll">
     <table id="setupsTable">
       <thead><tr><th>Setup</th><th>Trigger / entry</th><th>Invalidation (stop)</th><th>Target 1</th><th>Target 2</th><th>R:R</th><th>Confirmation needed</th></tr></thead>
       <tbody></tbody>
     </table>
+    </div>
   </section>
 
   <section id="secRisk">
@@ -294,10 +340,12 @@
 
   <section id="secAppendix">
     <h2><span class="n">08</span>&nbsp; Appendix — last 10 daily candles</h2>
+    <div class="table-scroll">
     <table id="candlesTable">
       <thead><tr><th>Date (UTC)</th><th>Open</th><th>High</th><th>Low</th><th>Close</th><th>Volume</th></tr></thead>
       <tbody></tbody>
     </table>
+    </div>
   </section>
 
   <div class="card-actions">
@@ -317,8 +365,8 @@
 /* =========================================================================
    CONFIG
    ========================================================================= */
-const SYMBOL_MAP = { BTC:'BTCUSDT', ETH:'ETHUSDT', SOL:'SOLUSDT', XAUT:'XAUTUSDT' };
-const DISPLAY_NAME = { BTC:'BTC-USD', ETH:'ETH-USD', SOL:'SOL-USD', XAUT:'XAUT-USD' };
+const SYMBOL_MAP = { BTC:'BTCUSDT', ETH:'ETHUSDT', SOL:'SOLUSDT', XAUT:'XAUTUSDT', XRP:'XRPUSDT', DOGE:'DOGEUSDT' };
+const DISPLAY_NAME = { BTC:'BTC-USD', ETH:'ETH-USD', SOL:'SOL-USD', XAUT:'XAUT-USD', XRP:'XRP-USD', DOGE:'DOGE-USD' };
 const API = 'https://api.binance.com/api/v3';
 const WS_BASE = 'wss://stream.binance.com:9443/ws';
 const TF_MS = { '15m': 15*60*1000, '1h': 60*60*1000, '4h': 4*60*60*1000 };
@@ -381,10 +429,12 @@ const LIVE = {
   canvas: null, ctx: null, dpr: 1,
   redrawScheduled: false,
   sessionVP: null,     // today's session POC/VAH/VAL, recomputed once per analysis cycle
-  optionWalls: null    // {available, callWall, putWall, expiryLabel} recomputed once per analysis cycle
+  optionWalls: null,   // {available, callWall, putWall, expiryLabel} recomputed once per analysis cycle
+  lastPadR: 80,
+  hover: { active:false, x:0, y:0 } // crosshair position in canvas CSS pixels
 };
 
-const OPTIONS_UNDERLYING = { BTC:'BTC', ETH:'ETH' }; // Deribit only lists options on these two of our four instruments
+const OPTIONS_UNDERLYING = { BTC:'BTC', ETH:'ETH' }; // Deribit only lists options on these two of our six instruments
 
 /* =========================================================================
    FORMAT HELPERS
@@ -1411,9 +1461,20 @@ function initChart(){
       LIVE.priceZoom = clampPriceZoom(LIVE.axisDragStartZoom * Math.exp(dy*0.006));
       drawChart();
     } else if(LIVE.dragging){
+      LIVE.hover.active = false;
       panChartByPixels(e.clientX - LIVE.dragStartX);
+    } else {
+      const rect = canvas.getBoundingClientRect();
+      const x = e.clientX - rect.left, y = e.clientY - rect.top;
+      if(x >= 0 && x <= rect.width && y >= 0 && y <= rect.height){
+        LIVE.hover.active = true; LIVE.hover.x = x; LIVE.hover.y = y;
+      } else {
+        LIVE.hover.active = false;
+      }
+      drawChart();
     }
   });
+  canvas.addEventListener('mouseleave', () => { LIVE.hover.active = false; drawChart(); });
   window.addEventListener('mouseup', () => {
     LIVE.dragging = false;
     LIVE.axisDragging = false;
@@ -1425,14 +1486,23 @@ function initChart(){
       LIVE.dragging = true;
       LIVE.dragStartX = e.touches[0].clientX;
       LIVE.dragStartView = LIVE.view.start;
+      const rect = canvas.getBoundingClientRect();
+      LIVE.hover.active = true;
+      LIVE.hover.x = e.touches[0].clientX - rect.left;
+      LIVE.hover.y = e.touches[0].clientY - rect.top;
     } else if(e.touches.length === 2){
       LIVE.dragging = false;
+      LIVE.hover.active = false;
       LIVE.pinchStartDist = touchDist(e.touches);
       LIVE.pinchStartCount = LIVE.view.count;
     }
   }, {passive:true});
   canvas.addEventListener('touchmove', (e) => {
     if(e.touches.length === 1 && LIVE.dragging){
+      const rect = canvas.getBoundingClientRect();
+      LIVE.hover.active = true;
+      LIVE.hover.x = e.touches[0].clientX - rect.left;
+      LIVE.hover.y = e.touches[0].clientY - rect.top;
       panChartByPixels(e.touches[0].clientX - LIVE.dragStartX);
     } else if(e.touches.length === 2 && LIVE.pinchStartDist){
       const dist = touchDist(e.touches);
@@ -1445,6 +1515,8 @@ function initChart(){
   canvas.addEventListener('touchend', () => {
     LIVE.dragging = false;
     LIVE.pinchStartDist = null;
+    LIVE.hover.active = false;
+    drawChart();
   });
 
   document.getElementById('zoomInBtn').addEventListener('click', () => zoomChart(0.8, LIVE.canvas.clientWidth/2));
@@ -1566,22 +1638,32 @@ function drawChart(){
   lo = center - half; hi = center + half;
 
   const yFor = (price) => padT + plotH * (1 - (price - lo)/(hi-lo));
+  const priceForY = (y) => lo + (hi-lo) * (1 - (y - padT)/plotH);
   // reserve LIVE.rightGutter empty candle-slots of space so bars are never flush against the right edge
   const slot = plotW / (count + LIVE.rightGutter);
   const xFor = (i) => padL + i*slot + slot/2;
   const tfMsForChart = TF_MS[STATE.execTf] || TF_MS['1h'];
+  const rangeStart = visible[0].openTime;
+  const timeForX = (x) => rangeStart + ((x - padL)/slot)*tfMsForChart;
 
-  // grid + price axis (bright green axis text)
+  function declutterY(entries, minGap){
+    const sorted = entries.slice().sort((a,b)=>a.y-b.y);
+    for(let i=1;i<sorted.length;i++){ if(sorted[i].y - sorted[i-1].y < minGap) sorted[i].y = sorted[i-1].y + minGap; }
+    for(let i=sorted.length-2;i>=0;i--){ if(sorted[i+1].y - sorted[i].y < minGap) sorted[i].y = sorted[i+1].y - minGap; }
+    return sorted;
+  }
+
+  // grid lines (stroke only for now — numeric labels are drawn later, after decluttering
+  // against the more important level/price/crosshair labels, so nothing on the axis overlaps)
   ctx.strokeStyle = '#1B2229';
   ctx.lineWidth = 1;
-  ctx.font = '11px IBM Plex Mono, monospace';
   const gridLines = 5;
+  const gridTicks = [];
   for(let g=0; g<=gridLines; g++){
     const price = lo + (hi-lo)*g/gridLines;
     const y = yFor(price);
     ctx.beginPath(); ctx.moveTo(padL, y); ctx.lineTo(cw-padR, y); ctx.stroke();
-    ctx.fillStyle = AXIS_COLOR;
-    ctx.fillText(fmtPrice(price), cw-padR+8, y+4);
+    gridTicks.push({y, price});
   }
 
   // session shading
@@ -1593,7 +1675,6 @@ function drawChart(){
 
   // session-break vertical lines (Asian/London/US/Late UTC boundaries) across the visible window
   {
-    const rangeStart = visible[0].openTime;
     const rangeEnd = visible[visible.length-1].closeTime;
     const xForTime = (t) => padL + ((t - rangeStart)/tfMsForChart)*slot;
     const breaks = sessionBreaksInRange(rangeStart, rangeEnd);
@@ -1638,8 +1719,9 @@ function drawChart(){
     ctx.beginPath(); ctx.arc(x, yFor(lastCandle.close), 3, 0, Math.PI*2); ctx.fill();
   }
 
-  // reference level lines: session VAL/POC/VAH + option call/put walls.
-  // Each shows its price value both beside its name label on the left AND on the price axis (right).
+  // reference level lines: session VAL/POC/VAH + option call/put walls, drawn at their TRUE price
+  // position. Their axis labels are collected here and decluttered together with the live price
+  // tag and the crosshair (below) so no two values on the price axis ever overlap.
   const levelLines = [];
   if(vp){
     levelLines.push({price: vp.vah, color: '#37B889', label: 'VAH'});
@@ -1650,6 +1732,7 @@ function drawChart(){
     levelLines.push({price: walls.callWall, color: '#C77DFF', label: 'Call wall'});
     levelLines.push({price: walls.putWall, color: '#FF7DB0', label: 'Put wall'});
   }
+  const priorityLabels = []; // {y, text, color, boxed} — decluttered as one group, highest priority
   if(levelLines.length){
     ctx.setLineDash([5,4]);
     ctx.lineWidth = 1.3;
@@ -1658,17 +1741,12 @@ function drawChart(){
       if(y < padT-10 || y > ch-padB+10) return;
       ctx.strokeStyle = l.color;
       ctx.beginPath(); ctx.moveTo(padL, y); ctx.lineTo(cw-padR, y); ctx.stroke();
-      ctx.font = '10.5px IBM Plex Mono, monospace';
-      ctx.fillStyle = l.color;
-      ctx.fillText(`${l.label} ${fmtPrice(l.price)}`, padL+4, y-3);
-      // price value repeated on the price axis, in the shared bright-green axis color
-      ctx.fillStyle = AXIS_COLOR;
-      ctx.fillText(fmtPrice(l.price), cw-padR+8, y+4);
+      priorityLabels.push({y, leftText: `${l.label} ${fmtPrice(l.price)}`, rightText: fmtPrice(l.price), color: l.color, boxed:false});
     });
     ctx.setLineDash([]);
   }
 
-  // current live price line + tag on the axis, and countdown to this bar's close
+  // current live price line + tag, and countdown to this bar's close
   if(showingLastCandle){
     const livePrice = LIVE.lastTradePrice !== null ? LIVE.lastTradePrice : lastCandle.close;
     const y = Math.max(padT+6, Math.min(ch-padB-6, yFor(livePrice)));
@@ -1677,27 +1755,73 @@ function drawChart(){
     ctx.lineWidth = 1;
     ctx.beginPath(); ctx.moveTo(padL, y); ctx.lineTo(cw-padR, y); ctx.stroke();
     ctx.setLineDash([]);
+    priorityLabels.push({y, leftText:null, rightText: fmtPrice(livePrice), color: AXIS_COLOR, boxed:true, isLivePrice:true});
 
-    const tagW = 68, tagH = 16;
-    ctx.fillStyle = '#0C1013';
-    ctx.strokeStyle = AXIS_COLOR;
-    ctx.lineWidth = 1;
-    ctx.fillRect(cw-padR, y-tagH/2, tagW, tagH);
-    ctx.strokeRect(cw-padR, y-tagH/2, tagW, tagH);
-    ctx.fillStyle = AXIS_COLOR;
-    ctx.font = '11px IBM Plex Mono, monospace';
-    ctx.fillText(fmtPrice(livePrice), cw-padR+6, y+4);
-
-    // countdown to this (forming) bar's close, shown on the price axis just above the live price tag
     const remainingMs = Math.max(0, lastCandle.closeTime - Date.now());
     const totalSec = Math.floor(remainingMs/1000);
     const mm = Math.floor(totalSec/60), ss = totalSec%60;
     const countdownText = `⏱ ${mm}:${String(ss).padStart(2,'0')}`;
-    const cdY = (y - tagH/2 - 8 < padT+10) ? y+tagH/2+16 : y-tagH/2-6;
-    ctx.font = '10.5px IBM Plex Mono, monospace';
-    ctx.fillStyle = AXIS_COLOR;
-    ctx.fillText(countdownText, cw-padR+2, cdY);
+    priorityLabels.push({y: y-14, leftText:null, rightText:null, color: AXIS_COLOR, boxed:false, isCountdown:true, countdownText});
   }
+
+  // crosshair (TradingView-style): dashed lines under the cursor, with value tags where it
+  // intersects the price axis (right) and the time axis (bottom)
+  let hoverTimeLabel = null, hoverX = null;
+  if(LIVE.hover.active && LIVE.hover.x >= padL && LIVE.hover.x <= cw-padR && LIVE.hover.y >= padT && LIVE.hover.y <= ch-padB){
+    hoverX = LIVE.hover.x;
+    const hoverY = LIVE.hover.y;
+    ctx.setLineDash([3,3]);
+    ctx.strokeStyle = 'rgba(220,227,232,0.45)';
+    ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(hoverX, padT); ctx.lineTo(hoverX, ch-padB); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(padL, hoverY); ctx.lineTo(cw-padR, hoverY); ctx.stroke();
+    ctx.setLineDash([]);
+
+    const hoverPrice = priceForY(hoverY);
+    priorityLabels.push({y: hoverY, leftText:null, rightText: fmtPrice(hoverPrice), color:'#DCE3E8', boxed:true});
+
+    const hoverTime = timeForX(hoverX);
+    hoverTimeLabel = { x: hoverX, text: new Date(hoverTime).toISOString().slice(5,16).replace('T',' ') };
+  }
+
+  // resolve overlaps among the price-axis labels that matter (levels, live price, crosshair),
+  // then draw them — this is the group that must never overlap
+  const minGap = 15;
+  const resolved = priorityLabels.length ? declutterY(priorityLabels, minGap) : [];
+  ctx.font = '10.5px IBM Plex Mono, monospace';
+  resolved.forEach(l => {
+    if(l.isCountdown){
+      ctx.fillStyle = l.color;
+      ctx.fillText(l.countdownText, cw-padR+2, l.y+4);
+      return;
+    }
+    if(l.leftText){
+      ctx.fillStyle = l.color;
+      ctx.fillText(l.leftText, padL+4, l.y-3);
+    }
+    if(l.boxed){
+      const tagW = 68, tagH = 16;
+      ctx.fillStyle = '#0C1013';
+      ctx.strokeStyle = l.color;
+      ctx.lineWidth = 1;
+      ctx.fillRect(cw-padR, l.y-tagH/2, tagW, tagH);
+      ctx.strokeRect(cw-padR, l.y-tagH/2, tagW, tagH);
+      ctx.fillStyle = l.color;
+      ctx.fillText(l.rightText, cw-padR+6, l.y+4);
+    } else {
+      ctx.fillStyle = AXIS_COLOR;
+      ctx.fillText(l.rightText, cw-padR+8, l.y+4);
+    }
+  });
+
+  // grid labels: only drawn where they don't collide with a (now-resolved) priority label —
+  // the gridline itself is always drawn (above); only its numeric text can be dropped
+  ctx.font = '11px IBM Plex Mono, monospace';
+  ctx.fillStyle = AXIS_COLOR;
+  gridTicks.forEach(g => {
+    const collides = resolved.some(l => Math.abs(l.y - g.y) < minGap-1);
+    if(!collides) ctx.fillText(fmtPrice(g.price), cw-padR+8, g.y+4);
+  });
 
   // countdown to the next session break (Asian/London/US/Late UTC boundary), top-right of the plot area
   {
@@ -1719,17 +1843,34 @@ function drawChart(){
     ctx.fillText(label, boxX+5, boxY+11);
   }
 
-  // time axis (first / middle / last visible)
-  ctx.fillStyle = '#576068';
+  // time axis (first / middle / last visible), each skipped if it would collide with the crosshair's time tag
   ctx.font = '10.5px IBM Plex Mono, monospace';
   const timeLabel = (c) => {
     const t = new Date(c.openTime);
     return t.toISOString().slice(5,16).replace('T',' ');
   };
+  const staticTimeLabels = [];
   if(visible.length){
-    ctx.fillText(timeLabel(visible[0]), padL, ch-6);
-    ctx.fillText(timeLabel(visible[Math.floor(visible.length/2)]), padL+plotW/2-40, ch-6);
-    ctx.fillText(timeLabel(visible[visible.length-1]), padL+(visible.length-1)*slot+slot/2-45, ch-6);
+    staticTimeLabels.push({x: padL, text: timeLabel(visible[0])});
+    staticTimeLabels.push({x: padL+plotW/2-40, text: timeLabel(visible[Math.floor(visible.length/2)])});
+    staticTimeLabels.push({x: padL+(visible.length-1)*slot+slot/2-45, text: timeLabel(visible[visible.length-1])});
+  }
+  const timeCollideGap = 78;
+  ctx.fillStyle = '#576068';
+  staticTimeLabels.forEach(t => {
+    if(hoverTimeLabel && Math.abs(t.x - (hoverTimeLabel.x-40)) < timeCollideGap) return; // crosshair time tag wins
+    ctx.fillText(t.text, t.x, ch-6);
+  });
+  if(hoverTimeLabel){
+    const tw = ctx.measureText(hoverTimeLabel.text).width;
+    const boxX = Math.max(padL, Math.min(cw-padR-tw-10, hoverTimeLabel.x - tw/2 - 5));
+    ctx.fillStyle = '#0C1013';
+    ctx.strokeStyle = 'rgba(220,227,232,0.6)';
+    ctx.lineWidth = 1;
+    ctx.fillRect(boxX, ch-padB, tw+10, 16);
+    ctx.strokeRect(boxX, ch-padB, tw+10, 16);
+    ctx.fillStyle = '#DCE3E8';
+    ctx.fillText(hoverTimeLabel.text, boxX+5, ch-padB+12);
   }
 
   ctx.restore();
