@@ -9,9 +9,9 @@
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
   :root{
-    --bg:#0C1013;
-    --panel:#12171C;
-    --panel-2:#161C22;
+    --bg:#000000;
+    --panel:#0A0C0E;
+    --panel-2:#101317;
     --border:#232A31;
     --text:#DCE3E8;
     --muted:#7C8894;
@@ -54,11 +54,11 @@
   select:focus, button:focus, input:focus{outline:2px solid var(--info);outline-offset:1px;}
   button{transition:border-color .15s;}
   button:hover{border-color:var(--muted);}
-  button.primary{background:var(--info);border-color:var(--info);color:#0C1013;font-weight:600;}
+  button.primary{background:var(--info);border-color:var(--info);color:#000000;font-weight:600;}
   button.primary:hover{filter:brightness(1.08);}
   .tf-group{display:flex;border:1px solid var(--border);border-radius:6px;overflow:hidden;}
   .tf-group button{border:none;border-radius:0;background:var(--panel-2);}
-  .tf-group button.active{background:var(--info);color:#0C1013;font-weight:600;}
+  .tf-group button.active{background:var(--info);color:#000000;font-weight:600;}
   .tf-group button + button{border-left:1px solid var(--border);}
 
   /* ---- status banner ---- */
@@ -165,13 +165,13 @@
     position:relative;background:var(--panel);border:1px solid var(--border);border-radius:8px;
     overflow:hidden;touch-action:none;height:380px;
   }
-  #priceChart{display:block;width:100%;height:100%;cursor:grab;}
+  #priceChart{display:block;width:100%;height:100%;cursor:grab;touch-action:none;}
   #priceChart.dragging{cursor:grabbing;}
   #priceChart.axis-drag{cursor:ns-resize;}
   .chart-hint{font-family:var(--mono);font-size:11px;color:var(--muted-2);margin-top:8px;}
   .jump-live{
     position:absolute;top:12px;right:88px;font-family:var(--mono);font-size:11.5px;
-    background:var(--info);color:#0C1013;border:none;border-radius:5px;padding:6px 10px;
+    background:var(--info);color:#000000;border:none;border-radius:5px;padding:6px 10px;
     cursor:pointer;font-weight:600;display:none;
   }
   #chartPanel.maximized{
@@ -179,7 +179,8 @@
     display:flex;flex-direction:column;box-shadow:0 0 0 100vmax rgba(0,0,0,.6);
   }
   #chartPanel.maximized #chartWrap{flex:1;height:auto;}
-  #chartPanel.maximized .chart-hint{margin-top:10px;}
+  #chartPanel.maximized .chart-hint{display:none;}
+  #chartPanel.maximized .chart-legend{display:none;}
 
   /* ---- mobile / small-viewport optimization ---- */
   @media (max-width:680px){
@@ -728,8 +729,10 @@ function findUnfilledGaps(dailyCandles, thresholdPct=0.005){
 /* =========================================================================
    MAIN PIPELINE
    ========================================================================= */
+let requestSeq = 0; // guards against a slow/stale fetch overwriting a newer symbol/timeframe switch
+
 async function loadAll(){
-  if(STATE.loading) return;
+  const mySeq = ++requestSeq;
   STATE.loading = true;
   STATE.errors = [];
   setStatus('loading', 'Fetching live data from Binance…');
@@ -777,6 +780,11 @@ async function loadAll(){
   } catch(e){
     STATE.errors.push({section:'peers', message: e.message});
   }
+
+  // A newer load (from a symbol/timeframe change, or the next auto-refresh tick) started
+  // while this one was still in flight — discard these results rather than let a slow,
+  // now-stale response clobber what's already on screen for the currently-selected asset.
+  if(mySeq !== requestSeq) return;
 
   STATE.lastFetch = Date.now();
   STATE.loading = false;
@@ -1482,6 +1490,7 @@ function initChart(){
   });
 
   canvas.addEventListener('touchstart', (e) => {
+    e.preventDefault(); // block native pinch-zoom/scroll so only the chart's own zoom/pan responds
     if(e.touches.length === 1){
       LIVE.dragging = true;
       LIVE.dragStartX = e.touches[0].clientX;
@@ -1496,8 +1505,9 @@ function initChart(){
       LIVE.pinchStartDist = touchDist(e.touches);
       LIVE.pinchStartCount = LIVE.view.count;
     }
-  }, {passive:true});
+  }, {passive:false});
   canvas.addEventListener('touchmove', (e) => {
+    e.preventDefault(); // block native pinch-zoom/scroll so only the chart's own zoom/pan responds
     if(e.touches.length === 1 && LIVE.dragging){
       const rect = canvas.getBoundingClientRect();
       LIVE.hover.active = true;
@@ -1511,7 +1521,7 @@ function initChart(){
       clampViewStart();
       drawChart();
     }
-  }, {passive:true});
+  }, {passive:false});
   canvas.addEventListener('touchend', () => {
     LIVE.dragging = false;
     LIVE.pinchStartDist = null;
@@ -1801,7 +1811,7 @@ function drawChart(){
     }
     if(l.boxed){
       const tagW = 68, tagH = 16;
-      ctx.fillStyle = '#0C1013';
+      ctx.fillStyle = '#000000';
       ctx.strokeStyle = l.color;
       ctx.lineWidth = 1;
       ctx.fillRect(cw-padR, l.y-tagH/2, tagW, tagH);
@@ -1864,7 +1874,7 @@ function drawChart(){
   if(hoverTimeLabel){
     const tw = ctx.measureText(hoverTimeLabel.text).width;
     const boxX = Math.max(padL, Math.min(cw-padR-tw-10, hoverTimeLabel.x - tw/2 - 5));
-    ctx.fillStyle = '#0C1013';
+    ctx.fillStyle = '#000000';
     ctx.strokeStyle = 'rgba(220,227,232,0.6)';
     ctx.lineWidth = 1;
     ctx.fillRect(boxX, ch-padB, tw+10, 16);
