@@ -218,6 +218,19 @@
     #chartWrap{height:260px;}
     .brand .kicker{font-size:10.5px;}
   }
+
+  /* ---- toasts ---- */
+  .toast-container{position:fixed;bottom:18px;right:18px;display:flex;flex-direction:column;gap:8px;z-index:2000;max-width:320px;}
+  .toast{
+    background:var(--panel-2);border:1px solid var(--border);border-left:3px solid var(--warn);
+    border-radius:6px;padding:10px 12px;font-size:12.5px;font-family:var(--mono);color:var(--text);
+    box-shadow:0 6px 18px rgba(0,0,0,.5);animation:toastIn .18s ease-out;transition:opacity .25s;
+  }
+  .toast.error{border-left-color:var(--sell);}
+  .toast.info{border-left-color:var(--info);}
+  .toast.ok{border-left-color:var(--buy);}
+  @keyframes toastIn{from{opacity:0;transform:translateY(8px);} to{opacity:1;transform:translateY(0);}}
+  @media (max-width:680px){ .toast-container{left:12px;right:12px;bottom:12px;max-width:none;} }
 </style>
 </head>
 <body>
@@ -254,6 +267,7 @@
     <span class="dot"></span><span id="statusText">Initializing…</span>
   </div>
   <div id="errorBanner" class="error-banner"></div>
+  <div id="toastContainer" class="toast-container" aria-live="polite"></div>
 
   <section id="secSummary">
     <h2><span class="n">01</span>&nbsp; Summary bias</h2>
@@ -416,6 +430,9 @@ let forceChartReset = true; // set true on symbol/timeframe change so the chart 
 const LIVE = {
   ws: null,
   reconnectTimer: null,
+  wsReconnectAttempts: 0,   // drives exponential backoff on WS reconnects
+  lastMessageTime: null,    // last time ANY message arrived on the tick socket, for heartbeat staleness checks
+  heartbeatTimer: null,
   lastTradePrice: null,
   prevTradePrice: null,
   candles: [],        // working candle array for the chart (cloned from exec candles, then live-updated)
@@ -492,27 +509,69 @@ async function fetchJSON(url){
 }
 
 function toCandle(k){
+  // Defensive: exchanges occasionally change payload shape. A kline row is a fixed-length
+  // array — refuse to silently coerce garbage into a candle that then poisons every downstream
+  // calculation (EMA/ATR/pivots/etc).
+  if(!Array.isArray(k) || k.length < 8){
+    throw new Error('Unexpected kline row shape from Binance');
+  }
+  const open = parseFloat(k[1]), high = parseFloat(k[2]), low = parseFloat(k[3]),
+        close = parseFloat(k[4]), volume = parseFloat(k[5]);
+  if(![open, high, low, close, volume].every(Number.isFinite)){
+    throw new Error('Non-numeric OHLCV field in kline row from Binance');
+  }
   return {
     openTime: k[0],
-    open: parseFloat(k[1]),
-    high: parseFloat(k[2]),
-    low: parseFloat(k[3]),
-    close: parseFloat(k[4]),
-    volume: parseFloat(k[5]),
+    open, high, low, close, volume,
     closeTime: k[6],
     quoteVolume: parseFloat(k[7]),
     trades: k[8]
   };
 }
 
-async function fetchKlines(pair, interval, limit){
-  const url = `${API}/klines?symbol=${pair}&interval=${interval}&limit=${limit}`;
+async function fetchKlines(pair, interval, limit, startTime){
+  let url = `${API}/klines?symbol=${pair}&interval=${interval}&limit=${limit}`;
+  if(startTime) url += `&startTime=${startTime}`;
   const raw = await fetchJSON(url);
+  if(!Array.isArray(raw)) throw new Error('Unexpected /klines response shape from Binance (expected an array)');
   return raw.map(toCandle);
 }
 
+// In-memory cache, keyed by pair+interval: on a repeat request for the same series we only
+// pull the candles since the last one we already have (Binance's own startTime param), then
+// splice them in — instead of re-downloading the full window every 60-second refresh cycle.
+const KLINES_CACHE = {};
+async function fetchKlinesCached(pair, interval, limit){
+  const key = `${pair}:${interval}`;
+  const cached = KLINES_CACHE[key];
+  if(cached && cached.candles.length){
+    const lastOpen = cached.candles[cached.candles.length-1].openTime;
+    try{
+      const fresh = await fetchKlines(pair, interval, Math.min(limit, 10), lastOpen);
+      if(fresh.length){
+        const merged = cached.candles.slice(0, -1); // drop the old last candle — it may have since closed/changed
+        const byTime = new Map(merged.map(c => [c.openTime, c]));
+        for(const c of fresh) byTime.set(c.openTime, c);
+        const combined = Array.from(byTime.values()).sort((a,b) => a.openTime - b.openTime).slice(-limit);
+        KLINES_CACHE[key] = { candles: combined };
+        return combined;
+      }
+    } catch(e){
+      // incremental refresh failed (network blip, schema change, etc) — fall through to a full refetch
+      console.warn(`Incremental klines refresh failed for ${key}, doing a full refetch:`, e.message);
+    }
+  }
+  const full = await fetchKlines(pair, interval, limit);
+  KLINES_CACHE[key] = { candles: full };
+  return full;
+}
+
 async function fetchTicker24hr(pair){
-  return fetchJSON(`${API}/ticker/24hr?symbol=${pair}`);
+  const t = await fetchJSON(`${API}/ticker/24hr?symbol=${pair}`);
+  if(!t || typeof t.lastPrice === 'undefined' || typeof t.volume === 'undefined'){
+    throw new Error('Unexpected /ticker/24hr response shape from Binance');
+  }
+  return t;
 }
 
 // Fetch 1-minute candles covering today (UTC) for the session volume profile.
@@ -526,7 +585,7 @@ async function fetchTodayMinuteKlines(pair, todayStartMs){
   while(cursor < now && guard < 3){
     const url = `${API}/klines?symbol=${pair}&interval=1m&startTime=${cursor}&limit=1000`;
     const raw = await fetchJSON(url);
-    if(!raw.length) break;
+    if(!Array.isArray(raw) || !raw.length) break;
     const batch = raw.map(toCandle);
     out = out.concat(batch);
     const lastClose = batch[batch.length-1].closeTime;
@@ -535,6 +594,28 @@ async function fetchTodayMinuteKlines(pair, todayStartMs){
     guard++;
   }
   return out;
+}
+
+// Same incremental idea as fetchKlinesCached, but for the paginated today's-1m-candles fetch —
+// this is the single most wasteful request in the app otherwise (up to 3x1000 candles every
+// 60 seconds), since after the first load in a given UTC day we only need the last minute or two.
+const TODAY_MINUTES_CACHE = {};
+async function fetchTodayMinuteKlinesCached(pair, todayStartMs){
+  const cached = TODAY_MINUTES_CACHE[pair];
+  if(cached && cached.dayStart === todayStartMs && cached.candles.length){
+    const lastClose = cached.candles[cached.candles.length-1].closeTime;
+    try{
+      const fresh = await fetchTodayMinuteKlines(pair, lastClose + 1);
+      const combined = cached.candles.concat(fresh);
+      TODAY_MINUTES_CACHE[pair] = { dayStart: todayStartMs, candles: combined };
+      return combined;
+    } catch(e){
+      console.warn(`Incremental session-minutes refresh failed for ${pair}, doing a full refetch:`, e.message);
+    }
+  }
+  const full = await fetchTodayMinuteKlines(pair, todayStartMs);
+  TODAY_MINUTES_CACHE[pair] = { dayStart: todayStartMs, candles: full };
+  return full;
 }
 
 /* ---- Options "wall" levels (Deribit public API — BTC/ETH only) ---- */
@@ -758,9 +839,9 @@ async function loadAll(){
 
   try{
     [daily, hourly, exec, ticker] = await Promise.all([
-      fetchKlines(pair, '1d', 300),
-      fetchKlines(pair, '1h', 220),
-      fetchKlines(pair, execInterval, execLimit),
+      fetchKlinesCached(pair, '1d', 300),
+      fetchKlinesCached(pair, '1h', 220),
+      fetchKlinesCached(pair, execInterval, execLimit),
       fetchTicker24hr(pair)
     ]);
   } catch(e){
@@ -770,7 +851,7 @@ async function loadAll(){
   if(daily && daily.length){
     try{
       const todayStart = daily[daily.length-1].openTime;
-      todayMinutes = await fetchTodayMinuteKlines(pair, todayStart);
+      todayMinutes = await fetchTodayMinuteKlinesCached(pair, todayStart);
     } catch(e){
       STATE.errors.push({section:'session-volume-profile', message: e.message});
     }
@@ -803,6 +884,7 @@ async function loadAll(){
   if(!daily || !hourly || !exec || !ticker){
     setStatus('error', 'Live data fetch failed — see banner below.');
     showErrorBanner();
+    showToast('Live data fetch failed — retrying automatically.', 'error');
     STATE.data = null;
     render();
     return;
@@ -1098,6 +1180,22 @@ function showErrorBanner(){
   el.style.display = 'block';
 }
 
+// Non-blocking toast for transient issues (dropped ticks, a failed background refresh, a
+// reconnect) — separate from the persistent error banner, which is reserved for the "no
+// live data at all" state so it doesn't get buried under one-off notices.
+function showToast(message, kind='info', duration=5000){
+  const container = document.getElementById('toastContainer');
+  if(!container) return;
+  const el = document.createElement('div');
+  el.className = `toast ${kind}`;
+  el.textContent = message;
+  container.appendChild(el);
+  setTimeout(() => {
+    el.style.opacity = '0';
+    setTimeout(() => el.remove(), 260);
+  }, duration);
+}
+
 function render(){
   const symbol = STATE.symbol;
   document.getElementById('brandTitle').textContent =
@@ -1327,7 +1425,14 @@ function buildPlainText(){
 
 /* =========================================================================
    LIVE TICK STREAM (WebSocket) + LIVE CANDLE AGGREGATION
+   Resilience: exponential backoff + jitter on reconnect, a heartbeat watchdog
+   that force-reconnects a silently-hung socket, and defensive payload
+   validation so a malformed/altered exchange message can't corrupt state.
    ========================================================================= */
+const WS_MAX_BACKOFF_MS = 30000;
+const WS_HEARTBEAT_STALE_MS = 30000; // no message in this long while socket claims OPEN -> treat as hung
+const WS_HEARTBEAT_CHECK_MS = 5000;
+
 function connectTickStream(){
   closeTickStream();
   const pair = SYMBOL_MAP[STATE.symbol];
@@ -1335,21 +1440,46 @@ function connectTickStream(){
   try{
     const ws = new WebSocket(`${WS_BASE}/${pair.toLowerCase()}@trade`);
     LIVE.ws = ws;
-    ws.onopen = () => setTickStatus('live', `Live ticks — ${DISPLAY_NAME[STATE.symbol]} @ Binance`);
+    ws.onopen = () => {
+      const wasDown = LIVE.wsReconnectAttempts > 0;
+      LIVE.wsReconnectAttempts = 0;
+      LIVE.lastMessageTime = Date.now();
+      setTickStatus('live', `Live ticks — ${DISPLAY_NAME[STATE.symbol]} @ Binance`);
+      if(wasDown) showToast('Live price feed reconnected.', 'ok', 3500);
+    };
     ws.onmessage = (ev) => {
+      LIVE.lastMessageTime = Date.now();
       let msg;
-      try{ msg = JSON.parse(ev.data); } catch(e){ return; }
-      if(msg.e !== 'trade') return;
-      handleTrade(parseFloat(msg.p), parseFloat(msg.q), msg.T);
+      try{ msg = JSON.parse(ev.data); } catch(e){ return; } // malformed frame — drop it, don't throw
+      if(!msg || typeof msg !== 'object' || msg.e !== 'trade') return;
+      const price = Number(msg.p), qty = Number(msg.q), tradeTime = Number(msg.T);
+      // Defensive validation: exchanges occasionally alter payload shape or send null/garbage
+      // fields. Refuse to let a bad value reach the candle aggregator or chart math.
+      if(!Number.isFinite(price) || price <= 0 || !Number.isFinite(qty) || qty < 0 || !Number.isFinite(tradeTime)){
+        console.warn('Ignoring malformed trade payload from tick stream:', msg);
+        return;
+      }
+      try{
+        handleTrade(price, qty, tradeTime);
+      } catch(e){
+        // A rendering/aggregation bug on one tick should never take down the whole stream
+        console.warn('Error handling trade tick (ignored, stream stays open):', e);
+      }
     };
     ws.onerror = () => setTickStatus('error', 'Tick stream error — retrying…');
     ws.onclose = () => {
-      setTickStatus('error', 'Tick stream disconnected — reconnecting…');
-      LIVE.reconnectTimer = setTimeout(connectTickStream, 4000);
+      const attempt = LIVE.wsReconnectAttempts++;
+      const base = Math.min(WS_MAX_BACKOFF_MS, 1000 * Math.pow(2, attempt));
+      const jitter = Math.random() * 400;
+      const delay = base + jitter;
+      if(attempt === 0) showToast('Live price feed disconnected — reconnecting…', 'warn');
+      setTickStatus('error', `Tick stream disconnected — reconnecting in ${Math.round(delay/1000)}s…`);
+      LIVE.reconnectTimer = setTimeout(connectTickStream, delay);
     };
   } catch(e){
     setTickStatus('error', 'Could not open tick stream (WebSocket blocked?)');
   }
+  startHeartbeatMonitor();
 }
 function closeTickStream(){
   if(LIVE.reconnectTimer){ clearTimeout(LIVE.reconnectTimer); LIVE.reconnectTimer = null; }
@@ -1359,6 +1489,25 @@ function closeTickStream(){
     LIVE.ws = null;
   }
 }
+
+// Ping-pong style watchdog: Binance/Deribit sockets can occasionally hang or silently drop
+// packets while the TCP connection stays technically open. If OPEN but silent for too long,
+// force a full re-init rather than trusting the browser to notice.
+function startHeartbeatMonitor(){
+  if(LIVE.heartbeatTimer) return; // one watchdog for the page's lifetime is enough
+  LIVE.heartbeatTimer = setInterval(() => {
+    if(!LIVE.ws) return;
+    const OPEN = (typeof WebSocket !== 'undefined' && WebSocket.OPEN !== undefined) ? WebSocket.OPEN : 1;
+    if(LIVE.ws.readyState !== OPEN) return; // CONNECTING/CLOSING/CLOSED already handled by onopen/onclose
+    const silentMs = Date.now() - (LIVE.lastMessageTime || 0);
+    if(silentMs > WS_HEARTBEAT_STALE_MS){
+      showToast('Tick stream went quiet — reconnecting.', 'warn');
+      setTickStatus('error', 'No ticks received — reconnecting…');
+      connectTickStream();
+    }
+  }, WS_HEARTBEAT_CHECK_MS);
+}
+
 function setTickStatus(kind, text){
   const el = document.getElementById('tickStatus');
   if(!el) return;
@@ -1944,10 +2093,54 @@ function drawChart(){
 }
 
 /* =========================================================================
+/* =========================================================================
+   LOCAL PERSISTENCE — user preferences + the manual catalyst log.
+   Wrapped defensively: private-browsing / storage-disabled / quota-exceeded
+   should degrade to "nothing persists this session," never throw.
+   ========================================================================= */
+const LS_KEYS = {
+  symbol: 'preTradeBrief.symbol',
+  execTf: 'preTradeBrief.execTf',
+  catalysts: 'preTradeBrief.catalystNotes'
+};
+function lsGet(key){
+  try{ return localStorage.getItem(key); } catch(e){ return null; }
+}
+function lsSet(key, value){
+  try{ localStorage.setItem(key, value); } catch(e){ /* private browsing, quota, or storage disabled — just don't persist */ }
+}
+function debounce(fn, wait){
+  let t = null;
+  return (...args) => { clearTimeout(t); t = setTimeout(() => fn(...args), wait); };
+}
+
+function loadPersistedPrefs(){
+  const savedSymbol = lsGet(LS_KEYS.symbol);
+  if(savedSymbol && SYMBOL_MAP[savedSymbol]){
+    STATE.symbol = savedSymbol;
+    const sel = document.getElementById('symbolSelect');
+    if(sel) sel.value = savedSymbol;
+  }
+  const savedTf = lsGet(LS_KEYS.execTf);
+  if(savedTf && TF_MS[savedTf]){
+    STATE.execTf = savedTf;
+    document.querySelectorAll('.tf-group button').forEach(b => {
+      b.classList.toggle('active', b.dataset.tf === savedTf);
+    });
+  }
+  const savedCatalysts = lsGet(LS_KEYS.catalysts);
+  if(savedCatalysts !== null){
+    const ta = document.getElementById('catalystNotes');
+    if(ta) ta.value = savedCatalysts;
+  }
+}
+
+/* =========================================================================
    WIRE UP UI
    ========================================================================= */
 document.getElementById('symbolSelect').addEventListener('change', (e)=>{
   STATE.symbol = e.target.value;
+  lsSet(LS_KEYS.symbol, STATE.symbol);
   forceChartReset = true; // new instrument — snap the chart back to its default view/zoom
   connectTickStream();
   loadAll();
@@ -1957,6 +2150,7 @@ document.querySelectorAll('.tf-group button').forEach(btn=>{
     document.querySelectorAll('.tf-group button').forEach(b=>b.classList.remove('active'));
     btn.classList.add('active');
     STATE.execTf = btn.dataset.tf;
+    lsSet(LS_KEYS.execTf, STATE.execTf);
     forceChartReset = true; // candle size changed — the old zoom/pan doesn't correspond to anything sensible anymore
     loadAll();
   });
@@ -1974,6 +2168,9 @@ document.getElementById('copyBtn').addEventListener('click', async ()=>{
     alert('Copy failed — select and copy the brief manually.\n\n' + txt.slice(0,200) + '…');
   }
 });
+document.getElementById('catalystNotes').addEventListener('input', debounce((e) => {
+  lsSet(LS_KEYS.catalysts, e.target.value);
+}, 400));
 let autoTimer = null;
 function setAutoRefresh(on){
   if(autoTimer){ clearInterval(autoTimer); autoTimer = null; }
@@ -1984,6 +2181,7 @@ document.getElementById('autoRefresh').addEventListener('change', (e)=>{
 });
 
 /* boot */
+loadPersistedPrefs(); // restore last-used symbol/timeframe/catalyst notes before the first fetch
 initChart();
 connectTickStream();
 loadAll();
