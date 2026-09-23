@@ -437,7 +437,7 @@ const LIVE = {
   prevTradePrice: null,
   candles: [],        // working candle array for the chart (cloned from exec candles, then live-updated)
   view: { start: 0, count: 120 },
-  rightGutter: 10,    // empty candle-slots of space reserved past the last bar — keeps candles off the right edge
+  rightGutter: 2,     // small margin past the last bar so it isn't flush against the axis — kept minimal to maximize plot space
   dragging: false,
   dragStartX: 0,
   dragStartView: 0,
