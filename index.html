@@ -298,8 +298,9 @@
         <span><span class="swatch" style="background:#C77DFF;"></span>Call wall — largest call OI, nearest expiry</span>
         <span><span class="swatch" style="background:#FF7DB0;"></span>Put wall — largest put OI, nearest expiry</span>
         <span><span class="swatch" style="background:#7C8894;"></span>Session breaks — Asian/London/US/Late UTC boundaries</span>
+        <span><span class="swatch" style="background:#FFFFFF;"></span>Vol badge — current bar volume ÷ 20-bar average</span>
       </div>
-      <div class="chart-hint">Move the mouse (or touch-drag) over the chart for a crosshair with live price/time readouts on the axes. Scroll / pinch over the chart to zoom time, drag to pan. Scroll or drag vertically on the right price axis to zoom the price scale — "Reset view" restores both. Candles are the selected execution timeframe and are not force-anchored to the right edge as new ticks arrive; use "Jump to live" to snap back. A countdown to the current bar's close sits on the price axis, and a countdown to the next session break (Asian/London/US/Late) sits top-right of the chart. Analysis panels below refresh on a fixed 1-minute cycle.</div>
+      <div class="chart-hint">Move the mouse (or touch-drag) over the chart for a crosshair with live price/time readouts on the axes. Scroll / pinch over the chart to zoom time, drag to pan. Scroll or drag vertically on the right price axis to zoom the price scale — "Reset view" restores both. Candles are the selected execution timeframe and are not force-anchored to the right edge as new ticks arrive; use "Jump to live" to snap back. A countdown to the current bar's close sits on the price axis, and a countdown to the next session break (Asian/London/US/Late) sits top-right of the chart. The badge above the current bar's closing time shows its volume as a multiple of the 20-bar average (green ≥1.3X, red ≤0.7X, white in between). Analysis panels below refresh on a fixed 1-minute cycle.</div>
     </div>
   </section>
 
@@ -1961,6 +1962,31 @@ function drawChart(){
     const x = xFor(lastGlobalIdx - start);
     ctx.fillStyle = lastCandle.close >= lastCandle.open ? '#37B889' : '#E2584A';
     ctx.beginPath(); ctx.arc(x, yFor(lastCandle.close), 3, 0, Math.PI*2); ctx.fill();
+
+    // Current bar volume vs its 20-bar average, as a small badge above this bar's closing-time
+    // position on the time axis. 20-bar average uses the 20 CLOSED bars before the current one —
+    // the still-forming bar is never included in its own baseline.
+    if(lastGlobalIdx >= 20){
+      const last20 = candles.slice(lastGlobalIdx-20, lastGlobalIdx);
+      const avgVol20 = last20.reduce((a,c)=>a+c.volume,0) / last20.length;
+      if(avgVol20 > 0){
+        const ratio = lastCandle.volume / avgVol20;
+        const label = `${ratio.toFixed(1)}X`;
+        const color = ratio >= 1.3 ? '#37B889' : (ratio <= 0.7 ? '#E2584A' : '#FFFFFF');
+        ctx.font = '10.5px IBM Plex Mono, monospace';
+        const tw = ctx.measureText(label).width;
+        const boxW = tw+10, boxH = 16;
+        const boxX = Math.max(padL, Math.min(cw-padR-boxW, x-boxW/2));
+        const boxY = ch - padB - boxH - 6; // sits just above the time axis, above this bar's closing time
+        ctx.fillStyle = 'rgba(12,16,19,0.88)';
+        ctx.fillRect(boxX, boxY, boxW, boxH);
+        ctx.strokeStyle = color;
+        ctx.lineWidth = 1;
+        ctx.strokeRect(boxX, boxY, boxW, boxH);
+        ctx.fillStyle = color;
+        ctx.fillText(label, boxX+5, boxY+11);
+      }
+    }
   }
 
   // reference level lines: session VAL/POC/VAH + option call/put walls, drawn at their TRUE price
