@@ -1963,9 +1963,24 @@ function drawChart(){
     ctx.fillStyle = lastCandle.close >= lastCandle.open ? '#37B889' : '#E2584A';
     ctx.beginPath(); ctx.arc(x, yFor(lastCandle.close), 3, 0, Math.PI*2); ctx.fill();
 
-    // Current bar volume vs its 20-bar average, as a small badge above this bar's closing-time
-    // position on the time axis. 20-bar average uses the 20 CLOSED bars before the current one —
-    // the still-forming bar is never included in its own baseline.
+    // Bar closing time, in its own bordered box right on the time axis under this bar.
+    ctx.font = '10.5px IBM Plex Mono, monospace';
+    const timeText = fmtAxisTime(lastCandle.closeTime);
+    const ttw = ctx.measureText(timeText).width;
+    const tBoxW = ttw+10, tBoxH = 16;
+    const tBoxX = Math.max(padL, Math.min(cw-padR-tBoxW, x-tBoxW/2));
+    const tBoxY = ch - padB;
+    ctx.fillStyle = 'rgba(12,16,19,0.88)';
+    ctx.fillRect(tBoxX, tBoxY, tBoxW, tBoxH);
+    ctx.strokeStyle = '#DCE3E8';
+    ctx.lineWidth = 1;
+    ctx.strokeRect(tBoxX, tBoxY, tBoxW, tBoxH);
+    ctx.fillStyle = '#DCE3E8';
+    ctx.fillText(timeText, tBoxX+5, tBoxY+12);
+
+    // Current bar volume vs its 20-bar average, as a small badge stacked directly above the
+    // closing-time box. 20-bar average uses the 20 CLOSED bars before the current one — the
+    // still-forming bar is never included in its own baseline.
     if(lastGlobalIdx >= 20){
       const last20 = candles.slice(lastGlobalIdx-20, lastGlobalIdx);
       const avgVol20 = last20.reduce((a,c)=>a+c.volume,0) / last20.length;
@@ -1973,11 +1988,10 @@ function drawChart(){
         const ratio = lastCandle.volume / avgVol20;
         const label = `${ratio.toFixed(1)}X`;
         const color = ratio >= 1.3 ? '#37B889' : (ratio <= 0.7 ? '#E2584A' : '#FFFFFF');
-        ctx.font = '10.5px IBM Plex Mono, monospace';
         const tw = ctx.measureText(label).width;
         const boxW = tw+10, boxH = 16;
         const boxX = Math.max(padL, Math.min(cw-padR-boxW, x-boxW/2));
-        const boxY = ch - padB - boxH - 6; // sits just above the time axis, above this bar's closing time
+        const boxY = tBoxY - boxH - 4; // stacked directly above the closing-time box
         ctx.fillStyle = 'rgba(12,16,19,0.88)';
         ctx.fillRect(boxX, boxY, boxW, boxH);
         ctx.strokeStyle = color;
