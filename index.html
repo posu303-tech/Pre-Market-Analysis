@@ -300,7 +300,7 @@
         <span><span class="swatch" style="background:#7C8894;"></span>Session breaks — Asian/London/US/Late UTC boundaries</span>
         <span><span class="swatch" style="background:#FFFFFF;"></span>Vol badge — current bar volume ÷ 20-bar average</span>
       </div>
-      <div class="chart-hint">Move the mouse (or touch-drag) over the chart for a crosshair with live price/time readouts on the axes. Scroll / pinch over the chart to zoom time, drag to pan. Scroll or drag vertically on the right price axis to zoom the price scale — "Reset view" restores both. Candles are the selected execution timeframe and are not force-anchored to the right edge as new ticks arrive; use "Jump to live" to snap back. A countdown to the current bar's close sits on the price axis, and a countdown to the next session break (Asian/London/US/Late) sits top-right of the chart. The badge above the current bar's closing time shows its volume as a multiple of the 20-bar average (green ≥1.3X, red ≤0.7X, white in between). Analysis panels below refresh on a fixed 1-minute cycle.</div>
+      <div class="chart-hint">Move the mouse (or touch-drag) over the chart for a crosshair with live price/time readouts on the axes. Scroll / pinch over the chart to zoom time, drag to pan. Scroll or drag vertically on the right price axis to zoom the price scale — "Reset view" restores both. Candles are the selected execution timeframe and are not force-anchored to the right edge as new ticks arrive; use "Jump to live" to snap back. A boxed countdown to the current bar's close sits on the price axis just above the live price tag, with the current bar's volume-vs-20-bar-average badge (green ≥1.3X, red ≤0.7X, white in between) boxed and stacked directly above that countdown; a separate countdown to the next session break (Asian/London/US/Late) sits top-right of the chart. The bar's closing time itself is shown in its own box on the time axis. Analysis panels below refresh on a fixed 1-minute cycle.</div>
     </div>
   </section>
 
@@ -1977,30 +1977,6 @@ function drawChart(){
     ctx.strokeRect(tBoxX, tBoxY, tBoxW, tBoxH);
     ctx.fillStyle = '#DCE3E8';
     ctx.fillText(timeText, tBoxX+5, tBoxY+12);
-
-    // Current bar volume vs its 20-bar average, as a small badge stacked directly above the
-    // closing-time box. 20-bar average uses the 20 CLOSED bars before the current one — the
-    // still-forming bar is never included in its own baseline.
-    if(lastGlobalIdx >= 20){
-      const last20 = candles.slice(lastGlobalIdx-20, lastGlobalIdx);
-      const avgVol20 = last20.reduce((a,c)=>a+c.volume,0) / last20.length;
-      if(avgVol20 > 0){
-        const ratio = lastCandle.volume / avgVol20;
-        const label = `${ratio.toFixed(1)}X`;
-        const color = ratio >= 1.3 ? '#37B889' : (ratio <= 0.7 ? '#E2584A' : '#FFFFFF');
-        const tw = ctx.measureText(label).width;
-        const boxW = tw+10, boxH = 16;
-        const boxX = Math.max(padL, Math.min(cw-padR-boxW, x-boxW/2));
-        const boxY = tBoxY - boxH - 4; // stacked directly above the closing-time box
-        ctx.fillStyle = 'rgba(12,16,19,0.88)';
-        ctx.fillRect(boxX, boxY, boxW, boxH);
-        ctx.strokeStyle = color;
-        ctx.lineWidth = 1;
-        ctx.strokeRect(boxX, boxY, boxW, boxH);
-        ctx.fillStyle = color;
-        ctx.fillText(label, boxX+5, boxY+11);
-      }
-    }
   }
 
   // reference level lines: session VAL/POC/VAH + option call/put walls, drawn at their TRUE price
@@ -2030,7 +2006,8 @@ function drawChart(){
     ctx.setLineDash([]);
   }
 
-  // current live price line + tag, and countdown to this bar's close
+  // current live price line + tag, countdown to this bar's close (boxed), and the current-bar
+  // volume-vs-20-bar-average badge (boxed, stacked directly above the countdown)
   if(showingLastCandle){
     const livePrice = LIVE.lastTradePrice !== null ? LIVE.lastTradePrice : lastCandle.close;
     const y = Math.max(padT+6, Math.min(ch-padB-6, yFor(livePrice)));
@@ -2045,7 +2022,21 @@ function drawChart(){
     const totalSec = Math.floor(remainingMs/1000);
     const mm = Math.floor(totalSec/60), ss = totalSec%60;
     const countdownText = `⏱ ${mm}:${String(ss).padStart(2,'0')}`;
-    priorityLabels.push({y: y-14, leftText:null, rightText:null, color: AXIS_COLOR, boxed:false, isCountdown:true, countdownText});
+    priorityLabels.push({y: y-14, leftText:null, rightText: countdownText, color: AXIS_COLOR, boxed:true});
+
+    // Current bar volume vs its 20-bar average, boxed and stacked directly above the countdown.
+    // 20-bar average uses the 20 CLOSED bars before the current one — the still-forming bar is
+    // never included in its own baseline.
+    if(lastGlobalIdx >= 20){
+      const last20 = candles.slice(lastGlobalIdx-20, lastGlobalIdx);
+      const avgVol20 = last20.reduce((a,c)=>a+c.volume,0) / last20.length;
+      if(avgVol20 > 0){
+        const ratio = lastCandle.volume / avgVol20;
+        const volLabel = `${ratio.toFixed(1)}X`;
+        const volColor = ratio >= 1.3 ? '#37B889' : (ratio <= 0.7 ? '#E2584A' : '#FFFFFF');
+        priorityLabels.push({y: y-32, leftText:null, rightText: volLabel, color: volColor, boxed:true});
+      }
+    }
   }
 
   // crosshair (TradingView-style): dashed lines under the cursor, with value tags where it
@@ -2074,11 +2065,6 @@ function drawChart(){
   const resolved = priorityLabels.length ? declutterY(priorityLabels, minGap) : [];
   ctx.font = '10.5px IBM Plex Mono, monospace';
   resolved.forEach(l => {
-    if(l.isCountdown){
-      ctx.fillStyle = l.color;
-      ctx.fillText(l.countdownText, cw-padR+2, l.y+4);
-      return;
-    }
     if(l.leftText){
       ctx.fillStyle = l.color;
       ctx.fillText(l.leftText, padL+4, l.y-3);
