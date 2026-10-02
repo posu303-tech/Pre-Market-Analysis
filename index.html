@@ -1634,16 +1634,20 @@ function initChart(){
   window.addEventListener('resize', resize);
   resize();
 
-  const inAxisStrip = (e) => {
+  // margin widens the hit-zone beyond the strip's visible pixels — used for touch, where a
+  // fingertip is far less precise than a mouse pointer and an 80px-wide strip is genuinely
+  // hard to land on reliably. Mouse calls pass no margin and keep the exact boundary.
+  const inAxisStrip = (e, margin=0) => {
     const rect = canvas.getBoundingClientRect();
     const x = (e.offsetX !== undefined ? e.offsetX : e.clientX - rect.left);
-    return x > rect.width - LIVE.lastPadR;
+    return x > rect.width - LIVE.lastPadR - margin;
   };
-  const inTimeAxisStrip = (e) => {
+  const inTimeAxisStrip = (e, margin=0) => {
     const rect = canvas.getBoundingClientRect();
     const y = (e.offsetY !== undefined ? e.offsetY : e.clientY - rect.top);
-    return y > rect.height - LIVE.lastPadB;
+    return y > rect.height - LIVE.lastPadB - margin;
   };
+  const TOUCH_AXIS_MARGIN = 28; // extra px of forgiveness for touch, inward from each axis strip's edge
 
   canvas.addEventListener('wheel', (e) => {
     e.preventDefault();
@@ -1715,17 +1719,36 @@ function initChart(){
   canvas.addEventListener('touchstart', (e) => {
     e.preventDefault(); // block native pinch-zoom/scroll so only the chart's own zoom/pan responds
     if(e.touches.length === 1){
-      LIVE.dragging = true;
-      LIVE.dragStartX = e.touches[0].clientX;
-      LIVE.dragStartY = e.touches[0].clientY;
-      LIVE.dragStartView = LIVE.view.start;
-      LIVE.dragStartPriceOffset = LIVE.priceOffset;
-      const rect = canvas.getBoundingClientRect();
-      LIVE.hover.active = true;
-      LIVE.hover.x = e.touches[0].clientX - rect.left;
-      LIVE.hover.y = e.touches[0].clientY - rect.top;
+      const t = e.touches[0];
+      if(inAxisStrip(t, TOUCH_AXIS_MARGIN)){
+        // touching the right price axis zooms the price scale, same as a mouse drag there.
+        // The hit-zone is widened (TOUCH_AXIS_MARGIN) since a finger can't land as precisely
+        // as a mouse pointer on an 80px-wide strip.
+        LIVE.axisDragging = true;
+        LIVE.axisDragStartY = t.clientY;
+        LIVE.axisDragStartZoom = LIVE.priceZoom;
+        LIVE.hover.active = false;
+      } else if(inTimeAxisStrip(t, TOUCH_AXIS_MARGIN)){
+        // touching the bottom time axis zooms the time scale
+        LIVE.timeAxisDragging = true;
+        LIVE.timeAxisDragStartX = t.clientX;
+        LIVE.timeAxisDragStartCount = LIVE.view.count;
+        LIVE.hover.active = false;
+      } else {
+        LIVE.dragging = true;
+        LIVE.dragStartX = t.clientX;
+        LIVE.dragStartY = t.clientY;
+        LIVE.dragStartView = LIVE.view.start;
+        LIVE.dragStartPriceOffset = LIVE.priceOffset;
+        const rect = canvas.getBoundingClientRect();
+        LIVE.hover.active = true;
+        LIVE.hover.x = t.clientX - rect.left;
+        LIVE.hover.y = t.clientY - rect.top;
+      }
     } else if(e.touches.length === 2){
       LIVE.dragging = false;
+      LIVE.axisDragging = false;
+      LIVE.timeAxisDragging = false;
       LIVE.hover.active = false;
       LIVE.pinchStartDist = touchDist(e.touches);
       LIVE.pinchStartCount = LIVE.view.count;
@@ -1733,7 +1756,16 @@ function initChart(){
   }, {passive:false});
   canvas.addEventListener('touchmove', (e) => {
     e.preventDefault(); // block native pinch-zoom/scroll so only the chart's own zoom/pan responds
-    if(e.touches.length === 1 && LIVE.dragging){
+    if(e.touches.length === 1 && LIVE.axisDragging){
+      const dy = e.touches[0].clientY - LIVE.axisDragStartY;
+      LIVE.priceZoom = clampPriceZoom(LIVE.axisDragStartZoom * Math.exp(dy*0.006));
+      drawChart();
+    } else if(e.touches.length === 1 && LIVE.timeAxisDragging){
+      const dx = e.touches[0].clientX - LIVE.timeAxisDragStartX;
+      LIVE.view.count = clampViewCount(Math.round(LIVE.timeAxisDragStartCount * Math.exp(dx*0.006)));
+      clampViewStart();
+      drawChart();
+    } else if(e.touches.length === 1 && LIVE.dragging){
       const rect = canvas.getBoundingClientRect();
       LIVE.hover.active = true;
       LIVE.hover.x = e.touches[0].clientX - rect.left;
@@ -1749,6 +1781,8 @@ function initChart(){
   }, {passive:false});
   canvas.addEventListener('touchend', () => {
     LIVE.dragging = false;
+    LIVE.axisDragging = false;
+    LIVE.timeAxisDragging = false;
     LIVE.pinchStartDist = null;
     LIVE.hover.active = false;
     drawChart();
