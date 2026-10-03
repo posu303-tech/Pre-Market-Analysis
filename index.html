@@ -1878,7 +1878,7 @@ function drawChart(){
   ctx.clearRect(0,0,cw,ch);
 
   const AXIS_COLOR = '#39FF14'; // bright green — all price-axis text uses this
-  const padL = 8, padR = 80, padT = 14, padB = 22;
+  const padL = 8, padR = 96, padT = 14, padB = 22; // padR widened to fit the larger price-scale text without clipping
   LIVE.lastPadR = padR; // used by mouse/wheel handlers to detect axis-strip interaction
   LIVE.lastPadB = padB; // used to detect time-axis-strip interaction
 
@@ -1903,8 +1903,17 @@ function drawChart(){
   let hi = Math.max(...visible.map(c=>c.high));
   const vp = LIVE.sessionVP;
   if(vp){ lo = Math.min(lo, vp.val); hi = Math.max(hi, vp.vah); }
+  // Option strikes can sit far from current price (especially far-OTM walls with speculative
+  // open interest). Only pull the visible range out to include a wall if doing so doesn't blow
+  // the chart up past usefulness — otherwise the wall line is simply off-screen (consistent with
+  // how any other off-screen level is handled) rather than squashing every candle into a sliver.
   const walls = LIVE.optionWalls;
-  if(walls && walls.available){ lo = Math.min(lo, walls.putWall); hi = Math.max(hi, walls.callWall); }
+  if(walls && walls.available){
+    const naturalRange = (hi - lo) || (hi*0.01) || 1;
+    const maxExtend = naturalRange * 1.5;
+    if(walls.putWall < lo && (lo - walls.putWall) <= maxExtend) lo = walls.putWall;
+    if(walls.callWall > hi && (walls.callWall - hi) <= maxExtend) hi = walls.callWall;
+  }
   const range = (hi - lo) || (hi*0.01) || 1;
   lo -= range*0.06; hi += range*0.06;
 
@@ -2094,37 +2103,40 @@ function drawChart(){
   }
 
   // resolve overlaps among the price-axis labels that matter (levels, live price, crosshair),
-  // then draw them — this is the group that must never overlap
-  const minGap = 15;
+  // then draw them — this is the group that must never overlap.
+  // Price-scale text is sized 30% larger than the rest of the chart's annotations for readability.
+  const minGap = 20; // >= the boxed tag height below, so bigger text never visually overlaps despite enough Y-gap
   const resolved = priorityLabels.length ? declutterY(priorityLabels, minGap) : [];
-  ctx.font = '10.5px IBM Plex Mono, monospace';
+  ctx.font = '13.65px IBM Plex Mono, monospace';
   resolved.forEach(l => {
     if(l.leftText){
       ctx.fillStyle = l.color;
       ctx.fillText(l.leftText, padL+4, l.y-3);
     }
     if(l.boxed){
-      const tagW = 68, tagH = 16;
+      const tw = ctx.measureText(l.rightText).width;
+      const tagW = tw+14, tagH = 20;
+      const boxX = Math.min(cw-padR, cw-tagW-2); // never let the box run off the canvas edge, whatever the text width
       ctx.fillStyle = '#000000';
       ctx.strokeStyle = l.color;
       ctx.lineWidth = 1;
-      ctx.fillRect(cw-padR, l.y-tagH/2, tagW, tagH);
-      ctx.strokeRect(cw-padR, l.y-tagH/2, tagW, tagH);
+      ctx.fillRect(boxX, l.y-tagH/2, tagW, tagH);
+      ctx.strokeRect(boxX, l.y-tagH/2, tagW, tagH);
       ctx.fillStyle = l.color;
-      ctx.fillText(l.rightText, cw-padR+6, l.y+4);
+      ctx.fillText(l.rightText, boxX+7, l.y+5);
     } else {
       ctx.fillStyle = AXIS_COLOR;
-      ctx.fillText(l.rightText, cw-padR+8, l.y+4);
+      ctx.fillText(l.rightText, cw-padR+8, l.y+5);
     }
   });
 
   // grid labels: only drawn where they don't collide with a (now-resolved) priority label —
   // the gridline itself is always drawn (above); only its numeric text can be dropped
-  ctx.font = '11px IBM Plex Mono, monospace';
+  ctx.font = '14.3px IBM Plex Mono, monospace';
   ctx.fillStyle = AXIS_COLOR;
   gridTicks.forEach(g => {
     const collides = resolved.some(l => Math.abs(l.y - g.y) < minGap-1);
-    if(!collides) ctx.fillText(fmtPrice(g.price), cw-padR+8, g.y+4);
+    if(!collides) ctx.fillText(fmtPrice(g.price), cw-padR+8, g.y+5);
   });
 
   // countdown to the next session break (Asian/London/US/Late UTC boundary), top-right of the plot area
